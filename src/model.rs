@@ -57,7 +57,7 @@ impl Round {
 #[derive(Debug)]
 pub struct Model {
     rounds: Vec<Round>,
-    num_rounds: i32,
+    pub num_rounds: i32,
 }
 
 impl Model {
@@ -81,14 +81,6 @@ impl Model {
         round_index: i32,
     ) -> Vec<(i32, i32)> {
         self.rounds[(round_index - 1) as usize].to_ints()
-    }
-
-    pub fn is_feasible(
-        &self,
-        permutation: &Vec<(i32, i32)>,
-        round_index: i32,
-    ) -> bool {
-        true
     }
 }
 

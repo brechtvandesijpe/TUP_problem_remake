@@ -52,7 +52,7 @@ fn main() {
         if val < upperbound {
             if (current_state.round_index as usize) < data.opponents.len() {
                 // ADD ALL FEASIBLE CHILDREN TO EXPLORE
-                let children = current_state.generate_children(Q1, Q2, model.get_round_ints(current_state.round_index + 1), upperbound);
+                let children = current_state.generate_children(Q1, Q2, model.get_round_ints(current_state.round_index + 1), upperbound, model.num_rounds);
 
                 // println!("round_index = {}, len children = {}, len stack = {}", current_state.round_index, children.len(), nodes.len());
                 if children.len() > 0 {

@@ -19,6 +19,7 @@ pub struct Node<'a> {
     pub score: i128,
     pub round_index: i32,
     dist: &'a Vec<Vec<i128>>,
+    visited_teams: Vec<Vec<bool>>,
 }
 
 impl<'a> Node<'a> {
@@ -27,13 +28,28 @@ impl<'a> Node<'a> {
         new_assignments: Vec<(i32, i32)>,
         dist: &'a Vec<Vec<i128>>,
     ) -> Self {
+        let round_index = parent.clone().map(|n| n.round_index).unwrap_or(0) + 1;
+        let mut visited_teams = parent.clone().map(|n| n.visited_teams).unwrap_or(vec![vec![false; new_assignments.len() * 2]; new_assignments.len()]);
+        for i in 0..new_assignments.len() {
+            let assignment = &new_assignments[i];
+            visited_teams[i as usize][(assignment.0 - 1) as usize] = true;
+        }
+
+        // println!("round_index = {:?}, new_assignments = {:?}, visited_teams = {:?}", round_index, new_assignments, visited_teams);
+
         Self {
             parent: parent.clone(),
             new_assignments,
             score: parent.clone().map(|n| n.score).unwrap_or(0),
-            round_index: parent.clone().map(|n| n.round_index).unwrap_or(0) + 1,
+            round_index,
             dist,
+            visited_teams,
         }
+
+        // if round_index == 14 {
+        //     me.export_string();
+        //     println!("new_assignments = {:?}, visited_teams = {:?}", new_assignments, visited_teams);
+        // }
     }
 
     pub fn evaluate(
@@ -68,22 +84,44 @@ impl<'a> Node<'a> {
         score < upperbound
     }
 
+    pub fn is_global_feasible(
+        &self,
+        num_rounds_left: i32,
+    ) -> bool {
+        let mut counter: Vec<i32> = vec![0; self.visited_teams.len()];
+
+        for i in 0..self.visited_teams.len() {
+            for elem_inner in &self.visited_teams[i as usize] {
+                if !elem_inner {
+                    counter[i] += 1;
+                }
+            }
+        }
+
+        *counter.iter().max().unwrap() <= num_rounds_left
+    }
+
     pub fn generate_children(
         &self,
         q1: i32,
         q2: i32,
         mut options: Vec<(i32, i32)>,
         upperbound: i128,
+        num_rounds: i32,
     ) -> Vec<Vec<(i32, i32)>> {
         let mut result = Vec::new();
+        if !self.is_global_feasible(num_rounds - self.round_index) {
+            return result;
+        }
+
         permutate(&mut options, 0, &mut result);
         result.into_iter()
-        .filter(|perm| {
-                    let is_q1 = self.check_q1(q1, perm);
-                    let is_q2 = self.check_q2(q2, perm);
-                    let is_pre_evaluated = self.pre_evaluate(perm, upperbound);
-                    // println!("Permutation {:?}, is_q1 = {:?}, is_q2 = {:?}, is_pre_evaluated = {:?}", perm, is_q1, is_q2, is_pre_evaluated);
-                    is_q1 && is_q2 && is_pre_evaluated
+              .filter(|perm| {
+                  let is_q1 = self.check_q1(q1, perm);
+                  let is_q2 = self.check_q2(q2, perm);
+                  let is_pre_evaluated = self.pre_evaluate(perm, upperbound);
+                  // println!("Permutation {:?}, is_q1 = {:?}, is_q2 = {:?}, is_pre_evaluated = {:?}", perm, is_q1, is_q2, is_pre_evaluated);
+                  is_q1 && is_q2 && is_pre_evaluated
               })
               .collect::<Vec<_>>()
     }
