@@ -5,7 +5,7 @@ use regex::Regex;
 #[derive(Debug)]
 pub struct Data {
     pub n_teams: i32,
-    pub dist: Vec<Vec<i32>>,
+    pub dist: Vec<Vec<i128>>,
     pub opponents: Vec<Vec<i32>>,
 }
 
@@ -18,7 +18,7 @@ pub fn read_data(file_path: &str) -> io::Result<Data> {
     re = Regex::new(r"dist=\s*\[\s*((?:\[\s*(?:\d+\s*)+\]\s*)+)\]").unwrap();
     let caps = re.captures(&content).unwrap();
     let dist_block = caps.get(1).unwrap().as_str();
-    let mut dist: Vec<Vec<i32>> = dist_block
+    let mut dist: Vec<Vec<i128>> = dist_block
         .lines()
         .map(|line| {
             line.trim_matches(|c| c == '[' || c == ']')

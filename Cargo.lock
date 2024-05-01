@@ -7,6 +7,7 @@ name = "TUP_problem_remake"
 version = "0.1.0"
 dependencies = [
  "hungarian",
+ "itertools",
  "regex",
 ]
 
@@ -26,6 +27,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f1fdabc7756949593fe60f30ec81974b613357de856987752631dea1e3394c80"
 
 [[package]]
+name = "either"
+version = "1.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a47c1c47d2f5964e29c61246e81db715514cd532db6b5116a25ea3c03d6780a2"
+
+[[package]]
 name = "fixedbitset"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -40,6 +47,15 @@ dependencies = [
  "fixedbitset",
  "ndarray",
  "num-traits",
+]
+
+[[package]]
+name = "itertools"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ba291022dbbd398a455acf126c1e341954079855bc60dfdda641363bd6922569"
+dependencies = [
+ "either",
 ]
 
 [[package]]

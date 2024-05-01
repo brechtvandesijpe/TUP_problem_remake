@@ -2,8 +2,8 @@ use crate::data::*;
 
 #[derive(Debug)]
 pub struct Game {
-    home_player: i32,
-    out_player: i32,
+    pub home_player: i32,
+    pub out_player: i32,
 }
 
 impl Game {
@@ -24,7 +24,9 @@ pub struct Round {
 }
 
 impl Round {
-    pub fn new(opponents: Vec<i32>) -> Self {
+    pub fn new(
+        opponents: Vec<i32>
+    ) -> Self {
         let mut games = Vec::new();
         for player in 0..opponents.len() {
             if opponents[player as usize] < 0 {
@@ -37,6 +39,18 @@ impl Round {
         Self {
             games,
         }
+    }
+    
+    pub fn to_ints(
+        &self,
+    ) -> Vec<(i32, i32)> {
+        let mut output = Vec::new();
+
+        for game in &self.games {
+            output.push((game.home_player, game.out_player));
+        }
+
+        output
     }
 }
 
@@ -60,6 +74,21 @@ impl Model {
             rounds,
             num_rounds,
         }
+    }
+
+    pub fn get_round_ints(
+        &self,
+        round_index: i32,
+    ) -> Vec<(i32, i32)> {
+        self.rounds[(round_index - 1) as usize].to_ints()
+    }
+
+    pub fn is_feasible(
+        &self,
+        permutation: &Vec<(i32, i32)>,
+        round_index: i32,
+    ) -> bool {
+        true
     }
 }
 
@@ -172,5 +201,15 @@ impl Umpire {
         out_index: i32,
     ) -> bool {
         !self.officiated[(home_index - 1) as usize] && !self.officiated[(out_index - 1) as usize]
+    }
+
+    pub fn export(
+        &self,
+    ) -> String {
+        let mut output = "".to_string();
+        for visit in &self.visit_history {
+            output = format!("{} {}", output, visit);
+        }
+        output
     }
 }
