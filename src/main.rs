@@ -10,9 +10,11 @@ use algorithm::*;
 const Q1: i32 = 4;
 const Q2: i32 = 2;
 
+const FILE_NAME: &str = "umps8";
+
 fn main() {
     // READIN DATA
-    let data = read_data("resources/umps8.txt").unwrap();
+    let data = read_data(format!("resources/{}.txt", FILE_NAME).as_str()).unwrap();
     let model = Model::new(&data);
     
     // CREATE UMPIRES
@@ -77,7 +79,7 @@ fn main() {
     }
     
     if let Some(best_solution) = best_solution {
-        println!("Best solution = {:?}", best_solution.export_string());
-        println!("upperbound = {:?}, round_index = {:?}", upperbound, best_solution.round_index);
+        println!("{}", best_solution);
+        best_solution.export(FILE_NAME)
     }
 }

@@ -1,4 +1,6 @@
 use itertools::Itertools; 
+use std::fs::File;
+use std::io::prelude::*;
 
 fn permutate(vec: &mut Vec<(i32, i32)>, start: usize, result: &mut Vec<Vec<(i32, i32)>>) {
     if start >= vec.len() {
@@ -12,7 +14,7 @@ fn permutate(vec: &mut Vec<(i32, i32)>, start: usize, result: &mut Vec<Vec<(i32,
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Node<'a> {
     parent: Option<Box<Node<'a>>>,
     new_assignments: Vec<(i32, i32)>,
@@ -20,6 +22,41 @@ pub struct Node<'a> {
     pub round_index: i32,
     dist: &'a Vec<Vec<i128>>,
     visited_teams: Vec<Vec<bool>>,
+}
+
+// impl<'a> std::fmt::Debug for Node<'a> {
+//     fn fmt(
+//         &self,
+//         f: &mut std::fmt::Formatter<'_>
+//     ) -> std::fmt::Result {
+//         if let Some(parent) = &self.parent {
+//             write!(f, r#"{}
+// {:?}"#, parent, self.new_assignments)
+//         } else {
+//             for i in 0..self.new_assignments.len() {
+//                 let tuple = &self.new_assignments[i];
+//                 write!(f, "{:?}", tuple.0);
+//                 if i != self.new_assignments.len() - 1 {
+//                     write!(f, " ");
+//                 }
+//             }
+//             write!(f, "{:?}")
+//         }
+//     }
+// }
+
+impl<'a> std::fmt::Display for Node<'a> {
+    fn fmt(
+        &self,
+        f: &mut std::fmt::Formatter<'_>
+    ) -> std::fmt::Result {
+        if let Some(parent) = &self.parent {
+            write!(f, r#"{}
+{:?}"#, parent, self.new_assignments)
+        } else {
+            write!(f, "{:?}", self.new_assignments)
+        }
+    }
 }
 
 impl<'a> Node<'a> {
@@ -84,7 +121,7 @@ impl<'a> Node<'a> {
         score < upperbound
     }
 
-    pub fn is_global_feasible(
+    pub fn check_global(
         &self,
         num_rounds_left: i32,
     ) -> bool {
@@ -110,20 +147,31 @@ impl<'a> Node<'a> {
         num_rounds: i32,
     ) -> Vec<Vec<(i32, i32)>> {
         let mut result = Vec::new();
-        if !self.is_global_feasible(num_rounds - self.round_index) {
+        if !self.check_global(num_rounds - self.round_index) {
             return result;
         }
 
         permutate(&mut options, 0, &mut result);
         result.into_iter()
-              .filter(|perm| {
-                  let is_q1 = self.check_q1(q1, perm);
-                  let is_q2 = self.check_q2(q2, perm);
-                  let is_pre_evaluated = self.pre_evaluate(perm, upperbound);
-                  // println!("Permutation {:?}, is_q1 = {:?}, is_q2 = {:?}, is_pre_evaluated = {:?}", perm, is_q1, is_q2, is_pre_evaluated);
-                  is_q1 && is_q2 && is_pre_evaluated
-              })
-              .collect::<Vec<_>>()
+            .filter(|perm| {
+                let is_q1 = self.check_q1(q1, perm);
+                if !is_q1 {
+                    return false;
+                }
+
+                let is_q2 = self.check_q2(q2, perm);
+                if !is_q2 {
+                    return false;
+                }
+
+                let is_pre_evaluated = self.pre_evaluate(perm, upperbound);
+                if !is_pre_evaluated {
+                    return false;
+                }
+
+                true
+            })
+            .collect::<Vec<_>>()
     }
 
     pub fn get_current_locations(
@@ -203,25 +251,6 @@ impl<'a> Node<'a> {
         false
     }
 
-    pub fn export_string(
-        &self,
-    ) -> String {
-        let vec = self.export_vec();
-        let mut result = String::new();
-
-        for row in vec {
-            for i in row.len()..0 {
-                result += &row[i].to_string();
-                if i != row.len() - 1 {
-                    result += " ";
-                }
-            }
-            result += "\n";
-        }
-
-        result
-    }
-    
     pub fn export_vec(
         &self,
     ) -> Vec<Vec<i32>> {
@@ -229,7 +258,7 @@ impl<'a> Node<'a> {
         
         if let Some(parent) = &self.parent {
             result = parent.export_vec();
-            println!("{:?} = {:?}", self.new_assignments, self.score);
+            // println!("{:?} = {:?}", self.new_assignments, self.score);
         } else {
             result = Vec::new();
             for i in 0..self.new_assignments.len() {
@@ -242,5 +271,23 @@ impl<'a> Node<'a> {
         }
 
         result
+    }
+
+    pub fn export(
+        &self,
+        name: &str,
+    ) {
+        let mut result = self.export_vec();
+        let mut file = File::create(format!("solution_{}.txt", name)).expect("Could not create file");
+        // for i in 0..result.len() {
+        //     for j in 0..result[i].len() {
+        //         let elem = &result[i][j];
+        //         file.write_all(format!("{}", elem).as_bytes()).expect("Could not write to file");
+        //         if i != result.len() - 1 || j != result[i].len() - 1 {
+        //             file.write_all(b",").expect("Could not write to file");
+        //         }
+        //     }
+        // }
+        let _ = file.write_all(format!("{}", self).as_bytes());
     }
 }
