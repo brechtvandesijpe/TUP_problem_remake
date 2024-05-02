@@ -50,15 +50,17 @@ fn main() {
         
         // EVALUATE
         let current_state = current_state.evaluate();
-        let val = current_state.score;
+        let mut val = current_state.score;
         if val < upperbound {
             if (current_state.round_index as usize) < data.opponents.len() {
                 // ADD ALL FEASIBLE CHILDREN TO EXPLORE
-                let children = current_state.generate_children(Q1, Q2, model.get_round_ints(current_state.round_index + 1), upperbound, model.num_rounds);
+                let result = current_state.generate_children(Q1, Q2, model.get_round_ints(current_state.round_index + 1), upperbound, model.num_rounds);
+                let extra_scores = result.0;
+                let children = result.1;
 
                 // println!("round_index = {}, len children = {}, len stack = {}", current_state.round_index, children.len(), nodes.len());
                 if children.len() > 0 {
-                    for child in children {
+                    for (i, child) in children.iter().enumerate() {
                         let parent = current_state.clone();
                         let new_node = Node::new(
                             Some(Box::new(parent)),
@@ -66,20 +68,23 @@ fn main() {
                             &data.dist,
                         );
                         nodes.push(new_node);
+                        val += extra_scores[i];
                     }
                 }
-            } else {
-                upperbound = val;
-                best_solution = Some(current_state);
-                println!("upperbound = {:?}", upperbound);
-            }
-            
+            }            
             // println!("best_solution = {:?}", best_solution.export_string())
+        }
+
+        if val < upperbound && current_state.round_index == 14 {
+            upperbound = val;
+            best_solution = Some(current_state);
+            // println!("{} {:?}", best_solution.clone().unwrap(), best_solution.clone().unwrap().score);
         }
     }
     
     if let Some(best_solution) = best_solution {
-        println!("{}", best_solution);
+        let best_solution = best_solution.evaluate();
+        println!("{} {:?}", best_solution, best_solution.score);
         best_solution.export(FILE_NAME)
     }
 }

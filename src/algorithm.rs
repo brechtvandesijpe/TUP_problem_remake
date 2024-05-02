@@ -14,7 +14,7 @@ fn permutate(vec: &mut Vec<(i32, i32)>, start: usize, result: &mut Vec<Vec<(i32,
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Node<'a> {
     parent: Option<Box<Node<'a>>>,
     new_assignments: Vec<(i32, i32)>,
@@ -107,8 +107,7 @@ impl<'a> Node<'a> {
     pub fn pre_evaluate(
         &self,
         assignments: &Vec<(i32, i32)>,
-        upperbound: i128,
-    ) -> bool {
+    ) -> i128 {
         let previous_locations: Vec<i32> = self.get_current_locations();
         let mut score: i128 = 0;
 
@@ -118,18 +117,28 @@ impl<'a> Node<'a> {
             score += self.dist[from as usize][to as usize];
         }
 
-        score < upperbound
+        score
     }
 
     pub fn check_global(
         &self,
         num_rounds_left: i32,
+        assignments: &Vec<(i32, i32)>
     ) -> bool {
         let mut counter: Vec<i32> = vec![0; self.visited_teams.len()];
 
         for i in 0..self.visited_teams.len() {
             for elem_inner in &self.visited_teams[i as usize] {
                 if !elem_inner {
+                    counter[i] += 1;
+                }
+            }
+        }
+
+        for i in 0..self.visited_teams.len() {
+            let assignment_umpire = assignments[i];
+            for (index, elem_inner) in self.visited_teams[i as usize].iter().enumerate() {
+                if !elem_inner && assignment_umpire.0 as usize != index {
                     counter[i] += 1;
                 }
             }
@@ -145,15 +154,20 @@ impl<'a> Node<'a> {
         mut options: Vec<(i32, i32)>,
         upperbound: i128,
         num_rounds: i32,
-    ) -> Vec<Vec<(i32, i32)>> {
+    ) -> (Vec<i128>, Vec<Vec<(i32, i32)>>) {
+        let mut extra_scores = Vec::new();
         let mut result = Vec::new();
-        if !self.check_global(num_rounds - self.round_index) {
-            return result;
-        }
+        // if !self.check_global(num_rounds - self.round_index, None) {
+        //     return (extra_scores, result);
+        // }
 
         permutate(&mut options, 0, &mut result);
-        result.into_iter()
+        result = result.into_iter()
             .filter(|perm| {
+                if !self.check_global(num_rounds - self.round_index, perm) {
+                    return false;
+                }
+
                 let is_q1 = self.check_q1(q1, perm);
                 if !is_q1 {
                     return false;
@@ -164,14 +178,19 @@ impl<'a> Node<'a> {
                     return false;
                 }
 
-                let is_pre_evaluated = self.pre_evaluate(perm, upperbound);
+                let extra_score = self.pre_evaluate(perm);
+                let is_pre_evaluated = extra_score < upperbound;
+
                 if !is_pre_evaluated {
                     return false;
                 }
 
+                extra_scores.push(extra_score);
                 true
             })
-            .collect::<Vec<_>>()
+            .collect::<Vec<_>>();
+        
+        (extra_scores, result)
     }
 
     pub fn get_current_locations(
