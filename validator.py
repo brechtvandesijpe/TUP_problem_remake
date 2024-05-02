@@ -1,5 +1,5 @@
 import sys
-global input_file, Q1, Q2
+global input_file, output_file, Q1, Q2
 import ast
 
 checkmark = "\u2713"
@@ -73,19 +73,44 @@ def check_global(data):
     
     return result
 
-if len(sys.argv) == 4:
+def parse_data(filename):
+    with open(f"resources/{filename}", 'r') as file:
+        lines = file.readlines()
+
+    nTeams = int(lines[1].split('=')[1].split(";")[0])
+
+    dist_start = lines.index('dist= [\n') + 1
+    dist_end = lines.index('      ];\n')
+    dist = [list(map(int, line.strip()[1:-1].split())) for line in lines[dist_start:dist_end]]
+
+    opponents_start = lines.index('opponents=[\n') + 1
+    opponents_end = lines.index('          ];\n')
+    opponents = [list(map(int, line.strip()[1:-1].split())) for line in lines[opponents_start:opponents_end]]
+
+    return nTeams, dist, opponents
+
+if len(sys.argv) == 5:
     input_file = sys.argv[1]
-    Q1 = int(sys.argv[2])
-    Q2 = int(sys.argv[3])
+    output_file = sys.argv[2]
+    Q1 = int(sys.argv[3])
+    Q2 = int(sys.argv[4])
     
-    title = f"Processing {input_file} with Q1 = {Q1}, Q2 = {Q2}"
+    title = f"Processing {input_file} -> {output_file} with Q1 = {Q1}, Q2 = {Q2}"
     width = len(title)
     spacer = "-" * width
+
     print(f'''          {spacer}
           {title}
           {spacer}''')
     
-    with open(input_file, 'r') as f:
+    nTeams, dist, opponents = parse_data('umps8.txt')
+    # print(f'''          {spacer}
+    #         nTeams = {nTeams}
+    #         dist = {dist}
+    #         opponents = {opponents}
+    #       ''')
+    
+    with open(output_file, 'r') as f:
         lines = f.readlines()
 
     data = [ast.literal_eval(line) for line in lines]
@@ -113,8 +138,22 @@ if len(sys.argv) == 4:
         constraint_ok("Global")
     print(f'''          {spacer}''')
     
+    # TOTAL DISTANCE
+    buffer = None
+    distance = 0
+    x = 0
+    for i, rnd in enumerate(data):
+        if i > 0:
+            x += 1
+            for j in range(len(rnd)):
+                distance += dist[rnd[j][0] - 1][buffer[j][0] - 1]
+        buffer = rnd
+    print(f'''
+          Total distance = {distance} (added distance from {x} rounds)
+          ''')
+    
 else:
     print('''
         Provide the needed arguments:
-        python3 validator.py <input_file>.txt <q1> <q2>
+        python3 validator.py <input_file>.txt <output_file>.txt <q1> <q2>
           ''')
