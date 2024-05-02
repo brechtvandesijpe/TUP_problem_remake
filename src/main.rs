@@ -10,15 +10,17 @@ use algorithm::*;
 const Q1: i32 = 4;
 const Q2: i32 = 2;
 
-const FILE_NAME: &str = "umps8";
+const FILE_NAME: &str = "umps8A";
 
 fn main() {
     // READIN DATA
     let data = read_data(format!("resources/{}.txt", FILE_NAME).as_str()).unwrap();
+    println!("{:?}", data);
+
     let model = Model::new(&data);
     
     // CREATE UMPIRES
-    let num_teams = &data.n_teams;
+    let num_teams = &data.num_teams;
     let num_umpires = num_teams / 2;
     
     let mut umpires = Vec::new();
@@ -80,6 +82,9 @@ fn main() {
     
     if let Some(best_solution) = best_solution {
         println!("{}", best_solution);
+        best_solution.clone().evaluate();
+        println!("EVAL = {}", best_solution.score);
+        println!("FEASIBLE? = {}", best_solution.clone().check_global(0));
         best_solution.export(FILE_NAME)
     }
 }

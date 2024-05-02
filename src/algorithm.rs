@@ -138,6 +138,29 @@ impl<'a> Node<'a> {
         *counter.iter().max().unwrap() <= num_rounds_left
     }
 
+    pub fn check_global_mutations(
+        &self,
+        num_rounds_left: i32,
+        mutations: &Vec<(i32, i32)>,
+    ) -> bool {
+        let mut counter: Vec<i32> = vec![0; self.visited_teams.len()];
+        let mut new_visited: Vec<Vec<bool>> = self.visited_teams.clone();
+
+        for (i, mutation) in mutations.iter().enumerate() {
+            new_visited[i][(mutation.0 - 1) as usize] = true;
+        }
+
+        for i in 0..new_visited.len() {
+            for elem_inner in &new_visited[i as usize] {
+                if !elem_inner {
+                    counter[i] += 1;
+                }
+            }
+        }
+
+        *counter.iter().max().unwrap() <= num_rounds_left
+    }
+
     pub fn generate_children(
         &self,
         q1: i32,
@@ -147,19 +170,24 @@ impl<'a> Node<'a> {
         num_rounds: i32,
     ) -> Vec<Vec<(i32, i32)>> {
         let mut result = Vec::new();
-        if !self.check_global(num_rounds - self.round_index) {
+        if !self.check_global(num_rounds - self.round_index - 1) {
             return result;
         }
 
         permutate(&mut options, 0, &mut result);
         result.into_iter()
             .filter(|perm| {
-                let is_q1 = self.check_q1(q1, perm);
+                let is_global = self.check_global_mutations(num_rounds - self.round_index - 1, perm);
+                if !is_global {
+                    return false;
+                }
+
+                let is_q1 = self.check_q1(std::cmp::max(self.round_index - q1, 1), perm);
                 if !is_q1 {
                     return false;
                 }
 
-                let is_q2 = self.check_q2(q2, perm);
+                let is_q2 = self.check_q2(std::cmp::max(self.round_index - q2, 1), perm);
                 if !is_q2 {
                     return false;
                 }
@@ -182,13 +210,15 @@ impl<'a> Node<'a> {
 
     pub fn check_q1(
         &self,
-        q1: i32,
+        stop_round: i32,
         assignments: &Vec<(i32, i32)>
     ) -> bool {
         let mut result = true;
-        if q1 > 1 {
+
+        // println!("{:?} < {:?}", stop_round, self.round_index);
+        if stop_round > self.round_index {
             if let Some(parent) = &self.parent {
-                result = parent.check_q1(q1 - 1, assignments);
+                result = parent.check_q1(stop_round, assignments);
             }
         }
         
@@ -201,14 +231,14 @@ impl<'a> Node<'a> {
 
     pub fn check_q2(
         &self,
-        q2: i32,
+        stop_round: i32,
         assignments: &Vec<(i32, i32)>
     ) -> bool {
         let mut result = true;
         
-        if q2 > 1 {
+        if stop_round < self.round_index {
             if let Some(parent) = &self.parent {
-                result = parent.check_q2(q2 - 1, assignments);
+                result = parent.check_q2(stop_round, assignments);
             }
         }
         
@@ -278,16 +308,27 @@ impl<'a> Node<'a> {
         name: &str,
     ) {
         let mut result = self.export_vec();
+        let _  =File::create(format!("solution_{}.txt", name))
+                            .expect("Could not create file")
+                            .write_all(format!("{}", self)
+                            .as_bytes());
+    }
+
+    pub fn export_pdf(
+        &self,
+        name: &str,
+    ) {
+        let mut result = self.export_vec();
         let mut file = File::create(format!("solution_{}.txt", name)).expect("Could not create file");
-        // for i in 0..result.len() {
-        //     for j in 0..result[i].len() {
-        //         let elem = &result[i][j];
-        //         file.write_all(format!("{}", elem).as_bytes()).expect("Could not write to file");
-        //         if i != result.len() - 1 || j != result[i].len() - 1 {
-        //             file.write_all(b",").expect("Could not write to file");
-        //         }
-        //     }
-        // }
+        for i in 0..result.len() {
+            for j in 0..result[i].len() {
+                let elem = &result[i][j];
+                file.write_all(format!("{}", elem).as_bytes()).expect("Could not write to file");
+                if i != result.len() - 1 || j != result[i].len() - 1 {
+                    file.write_all(b",").expect("Could not write to file");
+                }
+            }
+        }
         let _ = file.write_all(format!("{}", self).as_bytes());
     }
 }
