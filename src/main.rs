@@ -10,12 +10,12 @@ use algorithm::*;
 const Q1: i32 = 4;
 const Q2: i32 = 2;
 
-const FILE_NAME: &str = "umps8A";
+const FILE_NAME: &str = "umps8";
 
 fn main() {
     // READIN DATA
     let data = read_data(format!("resources/{}.txt", FILE_NAME).as_str()).unwrap();
-    println!("{:?}", data);
+    // println!("{:?}", data);
 
     let model = Model::new(&data);
     

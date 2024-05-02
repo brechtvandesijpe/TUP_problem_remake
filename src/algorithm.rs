@@ -177,18 +177,21 @@ impl<'a> Node<'a> {
         permutate(&mut options, 0, &mut result);
         result.into_iter()
             .filter(|perm| {
-                let is_global = self.check_global_mutations(num_rounds - self.round_index - 1, perm);
+                let is_global = self.check_global_mutations(num_rounds - self.round_index, perm);
                 if !is_global {
                     return false;
                 }
 
-                let is_q1 = self.check_q1(std::cmp::max(self.round_index - q1, 1), perm);
+                let is_q1 = self.check_q1(std::cmp::max(self.round_index - q1 + 2, 1), perm);
                 if !is_q1 {
                     return false;
                 }
 
-                let is_q2 = self.check_q2(std::cmp::max(self.round_index - q2, 1), perm);
+                let is_q2 = self.check_q2(std::cmp::max(self.round_index - q2 + 2, 1), perm);
                 if !is_q2 {
+//                     println!(r#"{}
+// {:?}
+// "#, self, perm);
                     return false;
                 }
 
@@ -272,8 +275,10 @@ impl<'a> Node<'a> {
         for i in 0..assignments.len() {
             let assignment = assignments[i];
             let new_assignment = self.new_assignments[i];
-            if assignment.0 == new_assignment.0 || assignment.1 == new_assignment.1 {
-                // println!("Visited equals on assignment = {:?}, new_assignment = {:?}", assignment, new_assignment);
+            
+            if assignment.0 == new_assignment.0 || assignment.0 == new_assignment.1 || 
+               assignment.1 == new_assignment.0 || assignment.1 == new_assignment.1 {
+                // println!("{:?} - {:?}", assignment, new_assignment);
                 return true;
             }
         }
