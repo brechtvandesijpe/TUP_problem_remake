@@ -147,6 +147,7 @@ if len(sys.argv) == 5:
             x += 1
             for j in range(len(rnd)):
                 distance += dist[rnd[j][0] - 1][buffer[j][0] - 1]
+        print(f"          {rnd} {distance}")
         buffer = rnd
     print(f'''
           Total distance = {distance} (added distance from {x} rounds)

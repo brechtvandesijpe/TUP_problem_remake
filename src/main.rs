@@ -51,7 +51,7 @@ fn main() {
         let current_state = nodes.pop().unwrap();
         
         // EVALUATE
-        let current_state = current_state.evaluate();
+        // let current_state = current_state.evaluate();
         let val = current_state.score;
         if val < upperbound {
             if (current_state.round_index as usize) < data.opponents.len() {
@@ -72,8 +72,11 @@ fn main() {
                 }
             } else {
                 upperbound = val;
-                best_solution = Some(current_state);
+                best_solution = Some(current_state.clone());
                 println!("upperbound = {:?}", upperbound);
+                println!(r#"New best solution
+{:?}
+"#, current_state);
             }
             
             // println!("best_solution = {:?}", best_solution.export_string())
@@ -81,8 +84,8 @@ fn main() {
     }
     
     if let Some(best_solution) = best_solution {
-        println!("{}", best_solution);
-        best_solution.clone().evaluate();
+        println!("{:?}", best_solution);
+        // best_solution.clone().evaluate();
         println!("EVAL = {}", best_solution.score);
         println!("FEASIBLE? = {}", best_solution.clone().check_global(0));
         best_solution.export(FILE_NAME)

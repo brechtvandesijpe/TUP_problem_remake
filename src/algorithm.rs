@@ -45,6 +45,20 @@ pub struct Node<'a> {
 //     }
 // }
 
+impl<'a> std::fmt::Debug for Node<'a> {
+    fn fmt(
+        &self,
+        f: &mut std::fmt::Formatter<'_>
+    ) -> std::fmt::Result {
+        if let Some(parent) = &self.parent {
+            write!(f, r#"{:?}
+{:?} {}"#, parent, self.new_assignments, self.score)
+        } else {
+            write!(f, "{:?} {:?}", self.new_assignments, self.score)
+        }
+    }
+}
+
 impl<'a> std::fmt::Display for Node<'a> {
     fn fmt(
         &self,
@@ -73,11 +87,21 @@ impl<'a> Node<'a> {
         }
 
         // println!("round_index = {:?}, new_assignments = {:?}, visited_teams = {:?}", round_index, new_assignments, visited_teams);
+        let mut my_extras = 0;
+        if let Some(ref parent) = parent {
+            for i in 0..new_assignments.len() {
+                let new_assignment = &new_assignments[i];
+                let previous_assignment = parent.new_assignments[i];
+                let from = previous_assignment.0 - 1;
+                let to = new_assignment.0 - 1;
+                my_extras += dist[from as usize][to as usize];
+            }
+        }
 
         Self {
             parent: parent.clone(),
             new_assignments,
-            score: parent.clone().map(|n| n.score).unwrap_or(0),
+            score: parent.clone().map(|n| n.score + my_extras).unwrap_or(0),
             round_index,
             dist,
             visited_teams,
@@ -110,7 +134,7 @@ impl<'a> Node<'a> {
         upperbound: i128,
     ) -> bool {
         let previous_locations: Vec<i32> = self.get_current_locations();
-        let mut score: i128 = 0;
+        let mut score: i128 = self.score;
 
         for i in 0..previous_locations.len() {
             let from: i32 = previous_locations[i] - 1;
@@ -177,17 +201,21 @@ impl<'a> Node<'a> {
         permutate(&mut options, 0, &mut result);
         result.into_iter()
             .filter(|perm| {
-                let is_global = self.check_global_mutations(num_rounds - self.round_index, perm);
-                if !is_global {
-                    return false;
-                }
+                // let is_global = self.check_global_mutations(num_rounds - self.round_index, perm);
+                // if !is_global {
+                //     return false;
+                // }
 
-                let is_q1 = self.check_q1(std::cmp::max(self.round_index - q1 + 2, 1), perm);
+                let stop_round = std::cmp::max(self.round_index - q1 + 1, 1);
+                // println!("Q1 => round_index {}, stop_round = {}", self.round_index, stop_round);
+                let is_q1 = self.check_q1(stop_round, perm);
                 if !is_q1 {
                     return false;
                 }
 
-                let is_q2 = self.check_q2(std::cmp::max(self.round_index - q2 + 2, 1), perm);
+                let stop_round = std::cmp::max(self.round_index - q2 + 1, 1);
+                // println!("Q2 => round_index {}, stop_round = {}", self.round_index, stop_round);
+                let is_q2 = self.check_q2(stop_round, perm);
                 if !is_q2 {
 //                     println!(r#"{}
 // {:?}
@@ -239,7 +267,7 @@ impl<'a> Node<'a> {
     ) -> bool {
         let mut result = true;
         
-        if stop_round < self.round_index {
+        if stop_round > self.round_index {
             if let Some(parent) = &self.parent {
                 result = parent.check_q2(stop_round, assignments);
             }
