@@ -205,19 +205,25 @@ impl<'a> Node<'a> {
                 // if !is_global {
                 //     return false;
                 // }
-
-                let stop_round = std::cmp::max(self.round_index - q1 + 1, 1);
+                let num_checks = q1 - 1;
+                let stop_round = self.round_index - num_checks;
                 // println!("Q1 => round_index {}, stop_round = {}", self.round_index, stop_round);
                 let is_q1 = self.check_q1(stop_round, perm);
                 if !is_q1 {
+//                     println!(r#"Q1:
+// {}
+// {:?}
+// "#, self, perm);
                     return false;
                 }
 
-                let stop_round = std::cmp::max(self.round_index - q2 + 1, 1);
+                let num_checks = q2 - 1;
+                let stop_round = self.round_index - num_checks;
                 // println!("Q2 => round_index {}, stop_round = {}", self.round_index, stop_round);
                 let is_q2 = self.check_q2(stop_round, perm);
                 if !is_q2 {
-//                     println!(r#"{}
+//                     println!(r#"Q2:
+// {}
 // {:?}
 // "#, self, perm);
                     return false;
@@ -242,19 +248,19 @@ impl<'a> Node<'a> {
     pub fn check_q1(
         &self,
         stop_round: i32,
-        assignments: &Vec<(i32, i32)>
+        perm: &Vec<(i32, i32)>
     ) -> bool {
         let mut result = true;
 
         // println!("{:?} < {:?}", stop_round, self.round_index);
-        if stop_round > self.round_index {
+        if self.round_index != 1 && stop_round < self.round_index {
             if let Some(parent) = &self.parent {
-                result = parent.check_q1(stop_round, assignments);
-            }
+                result = parent.check_q1(stop_round, perm);
+            } else {};
         }
         
         // println!("q1 = {:?}, round = {:?}, new_assignments = {:?}, assignments = {:?}", q1, self.round_index , self.new_assignments, assignments);
-        let is_visited = self.is_visited(assignments);
+        let is_visited = self.is_visited(perm);
         result = result && !is_visited;
         // println!("result = {:?}, is_visited = {:?}", result, is_visited);
         result
@@ -267,7 +273,7 @@ impl<'a> Node<'a> {
     ) -> bool {
         let mut result = true;
         
-        if stop_round > self.round_index {
+        if self.round_index != 1 && stop_round < self.round_index {
             if let Some(parent) = &self.parent {
                 result = parent.check_q2(stop_round, assignments);
             }

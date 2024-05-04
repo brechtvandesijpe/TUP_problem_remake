@@ -4,8 +4,8 @@ use model::*;
 mod data;
 use data::*;
 
-mod algorithm;
-use algorithm::*;
+pub mod algorithm;
+use crate::algorithm::Node;
 
 const Q1: i32 = 4;
 const Q2: i32 = 2;
@@ -19,17 +19,7 @@ fn main() {
 
     let model = Model::new(&data);
     
-    // CREATE UMPIRES
-    let num_teams = &data.num_teams;
-    let num_umpires = num_teams / 2;
-    
-    let mut umpires = Vec::new();
-    for i in 0..num_umpires {
-        umpires.push(Umpire::new(*num_teams, Q1, Q2));
-    }
-    
     // CREATE INITIAL NODE
-    let mut initial: Vec<(i32, i32)> = Vec::new();
     let initial = model.get_round_ints(1);
 
     let source = Node::new(
@@ -49,6 +39,7 @@ fn main() {
     while nodes.len() > 0 {
         // POP NEW STATE FROM STACK
         let current_state = nodes.pop().unwrap();
+        println!("{:?}", current_state);
         
         // EVALUATE
         // let current_state = current_state.evaluate();
