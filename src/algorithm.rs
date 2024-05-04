@@ -5,7 +5,8 @@ use std::io::prelude::*;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::time::Duration;
+use std::borrow::Borrow;
+use std::borrow::BorrowMut;
 
 #[derive(Debug)]
 pub struct Data {
@@ -79,7 +80,7 @@ fn read_array_i32(
     Ok(array)
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Game {
     pub home_player: i32,
     pub out_player: i32,
@@ -97,7 +98,7 @@ impl Game {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Round {
     games: Vec<Game>,
 }
@@ -133,7 +134,7 @@ impl Round {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Model {
     rounds: Vec<Round>,
     pub num_rounds: i32,
@@ -163,34 +164,77 @@ impl Model {
     }
 }
 
+fn pretty_print(
+    matrix: &Vec<Vec<i128>>,
+) {
+    for row in matrix {
+        println!("{:?}", row);
+    }
+}
+
 fn calculate_lowerbound(
     initial: Arc<Vec<(i32, i32)>>,
     dist: Arc<Vec<Vec<i128>>>,
-    lowerbound: Arc<Mutex<i128>>,
+    rounds_lbs: Arc<Mutex<Vec<Vec<i128>>>>,
     max_rounds: i32,
+    q1: i32,
+    q2: i32,
+    model: Model,
 ) {
-    let source = Node::new(
-        None,
-        (*initial).clone(),
-        &dist,
-    );
-
-    let mut rounds_lbs: Vec<Vec<i128>> = vec![vec![0; max_rounds as usize]; max_rounds as usize];
-
     for k in 2..max_rounds {
         let r: i32 = max_rounds - 1 - k;
-        let solution: i128 = 0;
+        let source = Node::new(
+            None,
+            (*initial).clone(),
+            &dist,
+        );
+
+        let mut upperbound = 0;
+        let mut nodes: Vec<Node> = Vec::new();
+        nodes.push(source.clone());
+
+        // START BRANCH AND BOUND
+        while nodes.len() > 0 {
+            // POP NEW STATE FROM STACK
+            let current_state = nodes.pop().unwrap();
+            
+            // EVALUATE
+            let val = current_state.score;
+            if val >= upperbound {
+                if (current_state.round_index as usize) < k as usize {
+                    // ADD ALL FEASIBLE CHILDREN TO EXPLORE
+                    let children = current_state.generate_children(q1, q2, model.get_round_ints(current_state.round_index + 1), upperbound, max_rounds, false);
+                    
+                    // CREATE AND ADD ALL CHILDREN
+                    if !children.is_empty() {
+                        for child in children {
+                            let new_node = Node::new(
+                                Some(Box::new(current_state.clone())),
+                                child.clone(),
+                                &dist,
+                            );
+                            nodes.push(new_node);
+                        }
+                    }
+                } else {
+                    upperbound = val;
+                }
+            }
+        }
+
+        let mut rounds_lbs = rounds_lbs.lock().unwrap().clone();
         for r1 in (0..=r).rev() {
             for r2 in r + k..max_rounds {
                 let best_val = std::cmp::max(
-                                  std::cmp::max(rounds_lbs[r1 as usize][r2 as usize], rounds_lbs[r1 as usize][r as usize] + solution),
-                                  rounds_lbs[(r + k) as usize][r2 as usize]);
-                if best_val != rounds_lbs[r1 as usize][r2 as usize] {
-                    *lowerbound.lock().unwrap() = best_val;
-                }
-                rounds_lbs[r1 as usize][r2 as usize] = best_val;
+                    std::cmp::max(rounds_lbs[r1 as usize][r2 as usize].borrow_mut().clone(), rounds_lbs[r1 as usize][r as usize].borrow().clone() + upperbound),
+                    rounds_lbs[(r + k) as usize][r2 as usize].borrow_mut().clone()
+                );
+                *rounds_lbs[r1 as usize][r2 as usize].borrow_mut() = best_val;
+                pretty_print(&rounds_lbs);
             }
         }
+
+        // println!("{:?}", rounds_lbs);
     }
 }
 
@@ -217,17 +261,27 @@ pub fn branch_and_bound(
     nodes.push(source.clone());
 
     // START LWOERBOUND_THREAD
-    let lowerbound: Arc<Mutex<i128>> = Arc::new(Mutex::new(0));
-    let lowerbound_clone: Arc<Mutex<i128>> = Arc::clone(&lowerbound);
+    let lowerbound:Arc<Mutex<Vec<Vec<i128>>>> = Arc::new(Mutex::new(vec![vec![0; model.num_rounds as usize]; model.num_rounds as usize]));
+    let lowerbound_clone:Arc<Mutex<Vec<Vec<i128>>>> = Arc::clone(&lowerbound);
 
     let dist_clone = Arc::new(data.dist.clone());
     let dist_clone_lb = Arc::clone(&dist_clone);
     let initial_clone = Arc::new(initial.clone());
     let initial_clone_lb = Arc::clone(&initial_clone);
 
+    let num_rounds = model.num_rounds;
+    let model_clone = model.clone();
     let _ = thread::spawn(
         move || {
-            calculate_lowerbound(initial_clone_lb, dist_clone_lb, lowerbound_clone, model.num_rounds)
+            calculate_lowerbound(
+                initial_clone_lb,
+                dist_clone_lb,
+                lowerbound_clone,
+                num_rounds,
+                q1,
+                q2,
+                model_clone,
+            )
         }
     );
 
@@ -238,11 +292,11 @@ pub fn branch_and_bound(
         
         // EVALUATE
         let val = current_state.score;
-        let lb_val = *lowerbound.lock().unwrap();
-        if val >= lb_val && val < upperbound {
-            if (current_state.round_index as usize) < data.opponents.len() {
+        let lb_val = lowerbound.lock().unwrap().clone();
+        if val >= lb_val[(current_state.round_index - 1) as usize][(num_rounds - 1) as usize] && val < upperbound {
+            if (current_state.round_index as usize) < num_rounds as usize {
                 // ADD ALL FEASIBLE CHILDREN TO EXPLORE
-                let children = current_state.generate_children(q1, q2, model.get_round_ints(current_state.round_index + 1), upperbound, model.num_rounds);
+                let children = current_state.generate_children(q1, q2, model.get_round_ints(current_state.round_index + 1), upperbound, num_rounds, true);
 
                 // CREATE AND ADD ALL CHILDREN
                 if !children.is_empty() {
@@ -257,11 +311,12 @@ pub fn branch_and_bound(
                 }
             } else {
                 upperbound = val;
+                println!("lb = {}, ub = {}", lb_val[(current_state.round_index - 1) as usize][(num_rounds - 1) as usize], upperbound);
                 best_solution = Some(current_state.clone());
             }
         }
 
-        if lb_val == upperbound {
+        if lb_val[(current_state.round_index - 1) as usize][(num_rounds - 1) as usize] == upperbound {
             break;
         }
     }
@@ -452,6 +507,7 @@ impl<'a> Node<'a> {
         mut options: Vec<(i32, i32)>,
         upperbound: i128,
         num_rounds: i32,
+        is_minimizing: bool,
     ) -> Vec<Vec<(i32, i32)>> {
         let mut result = Vec::new();
         if !self.check_global(num_rounds - self.round_index - 1) {
@@ -490,10 +546,19 @@ impl<'a> Node<'a> {
                 }
 
                 let is_pre_evaluated = self.pre_evaluate(perm, upperbound);
-                if !is_pre_evaluated {
-                    counter += 1;
-                    // println!("EVAL! Counter: {}", counter);
-                    return false;
+
+                if is_minimizing {
+                    if !is_pre_evaluated {
+                        counter += 1;
+                        // println!("EVAL! Counter: {}", counter);
+                        return false;
+                    }
+                } else {
+                    if is_pre_evaluated {
+                        counter += 1;
+                        // println!("EVAL! Counter: {}", counter);
+                        return false;
+                    }
                 }
 
                 true
