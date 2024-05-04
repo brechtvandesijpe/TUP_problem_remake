@@ -189,20 +189,20 @@ impl<'a> Node<'a> {
         let num_checks_q1 = q1 - 1;
         let stop_round_q1 = self.round_index - num_checks_q1;
 
-        if let Some(parent) = &self.parent {
-            if !parent.check_q1(num_checks_q1, &self.new_assignments) {
-                return result;
-            }
-        }
+        // if let Some(parent) = &self.parent {
+        //     if !parent.check_q1(num_checks_q1, &self.new_assignments) {
+        //         return result;
+        //     }
+        // }
 
-        let num_checks_q2 = q1 - 1;
+        let num_checks_q2 = q2 - 1;
         let stop_round_q2 = self.round_index - num_checks_q2;
 
-        if let Some(parent) = &self.parent {
-            if !parent.check_q1(num_checks_q1, &self.new_assignments) {
-                return result;
-            }
-        }
+        // if let Some(parent) = &self.parent {
+        //     if !parent.check_q1(num_checks_q2, &self.new_assignments) {
+        //         return result;
+        //     }
+        // }
         
         if !self.check_global(num_rounds - self.round_index - 1) {
             return result;
