@@ -40,8 +40,8 @@ fn main() {
     while nodes.len() > 0 {
         // POP NEW STATE FROM STACK
         let current_state = nodes.pop().unwrap();
-        println!("{:?}", current_state);
-        println!("--");
+        // println!("{:?}", current_state);
+        // println!("--");
         
         // EVALUATE
         // let current_state = current_state.evaluate();
@@ -66,9 +66,9 @@ fn main() {
                 upperbound = val;
                 best_solution = Some(current_state.clone());
                 println!("upperbound = {:?}", upperbound);
-                println!(r#"New best solution
-{:?}
-"#, current_state);
+//                 println!(r#"New best solution
+// {:?}
+// "#, current_state);
             }
             
             // println!("best_solution = {:?}", best_solution.export_string())

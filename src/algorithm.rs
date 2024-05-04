@@ -186,48 +186,41 @@ impl<'a> Node<'a> {
             return result;
         }
 
-        let num_checks_q1 = q1 - 1;
+        let num_checks_q1 = q1 - 2;
         let stop_round_q1 = self.round_index - num_checks_q1;
 
-        // if let Some(parent) = &self.parent {
-        //     if !parent.check_q1(num_checks_q1, &self.new_assignments) {
-        //         return result;
-        //     }
-        // }
-
-        let num_checks_q2 = q2 - 1;
+        let num_checks_q2 = q2 - 2;
         let stop_round_q2 = self.round_index - num_checks_q2;
 
-        // if let Some(parent) = &self.parent {
-        //     if !parent.check_q1(num_checks_q2, &self.new_assignments) {
-        //         return result;
-        //     }
-        // }
-        
-        if !self.check_global(num_rounds - self.round_index - 1) {
-            return result;
-        }
-
         permutate(&mut options, 0, &mut result);
+        // println!("result.len() = {}", result.len());
+        let mut counter = 0;
+
         result.into_iter()
             .filter(|perm| {
-                let is_global = self.check_global_mutations(num_rounds - self.round_index, perm);
-                if !is_global {
-                    return false;
-                }
+                // let is_global = self.check_global_mutations(num_rounds - self.round_index, perm);
+                // if !is_global {
+                //     return false;
+                // }
 
                 let is_q1 = self.check_q1(stop_round_q1, perm);
                 if !is_q1 {
+                    counter += 1;
+                    // println!("Q1! Counter: {}", counter);
                     return false;
                 }
 
                 let is_q2 = self.check_q2(stop_round_q2, perm);
                 if !is_q2 {
+                    counter += 1;
+                    // println!("Q2! Counter: {}", counter);
                     return false;
                 }
 
                 let is_pre_evaluated = self.pre_evaluate(perm, upperbound);
                 if !is_pre_evaluated {
+                    counter += 1;
+                    // println!("EVAL! Counter: {}", counter);
                     return false;
                 }
 
