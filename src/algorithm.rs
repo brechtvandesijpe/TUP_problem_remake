@@ -3,59 +3,9 @@ use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::io::prelude::*;
 use std::str::FromStr;
-
-// use std::fs::File;
-// use std::io::{self, BufRead, BufReader};
-// use regex::Regex;
-
-// #[derive(Debug)]
-// pub struct Data {
-//     pub n_teams: i32,
-//     pub dist: Vec<Vec<i128>>,
-//     pub opponents: Vec<Vec<i32>>,
-// }
-
-// pub fn read_data(file_path: &str) -> io::Result<Data> {
-//     let content = std::fs::read_to_string(file_path)?;
-//     let mut re = Regex::new(r"nTeams=(\d+);").unwrap();
-//     let mut caps = re.captures(&content).unwrap();
-//     let n_teams: i32 = caps.get(1).unwrap().as_str().parse().unwrap();
-
-//     re = Regex::new(r"dist=\s*\[\s*((?:\[\s*(?:\d+\s*)+\]\s*)+)\]").unwrap();
-//     let caps = re.captures(&content).unwrap();
-//     let dist_block = caps.get(1).unwrap().as_str();
-//     let mut dist: Vec<Vec<i128>> = dist_block
-//         .lines()
-//         .map(|line| {
-//             line.trim_matches(|c| c == '[' || c == ']')
-//                 .split_whitespace()
-//                 .map(|num| num.parse().unwrap())
-//                 .collect()
-//         })
-//         .collect();
-    
-//     dist.pop(); // Remove the last row
-
-//     re = Regex::new(r"opponents=\s*\[\s*((?:\[\s*(?:-?\d+\s*)+\]\s*)+)\]").unwrap();
-//     let caps = re.captures(&content).unwrap();
-//     let opponents_block = caps.get(1).unwrap().as_str();
-//     let mut opponents: Vec<Vec<i32>> = opponents_block
-//         .lines()
-//         .map(|line| {
-//             line.trim_matches(|c| c == '[' || c == ']')
-//                 .split_whitespace()
-//                 .map(|num| num.parse().unwrap())
-//                 .collect()
-//         })
-//         .collect();
-//         opponents.pop();
-
-//     Ok(Data {
-//         n_teams,
-//         dist,
-//         opponents,
-//     })
-// }
+use std::sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}};
+use std::thread;
+use std::time::Duration;
 
 #[derive(Debug)]
 pub struct Data {
@@ -213,6 +163,12 @@ impl Model {
     }
 }
 
+fn calculate_lowerbound(
+    source_node: &Node,
+) {
+
+}
+
 pub fn branch_and_bound(
     file_name: &str,
     q1: i32,
@@ -234,6 +190,21 @@ pub fn branch_and_bound(
     // ADD SOURCE NODE TO STACK
     let mut nodes: Vec<Node> = Vec::new();
     nodes.push(source);
+
+    // START LWOERBOUND_THREAD
+    let lower_bound = Arc::new(Mutex::new(0));
+    let lower_bound_clone = Arc::clone(&lower_bound);
+
+    let should_stop = Arc::new(AtomicBool::new(false));
+    let should_stop_clone = Arc::clone(&should_stop);
+
+    let handle = thread::spawn(move || {
+        loop {
+            thread::sleep(Duration::from_millis(1));
+            let mut num = lower_bound_clone.lock().unwrap();
+            *num += 1;
+        }
+    });
 
     // START BRANCH AND BOUND
     while nodes.len() > 0 {
@@ -259,11 +230,16 @@ pub fn branch_and_bound(
                     }
                 }
             } else {
+                println!("Lowerbound = {:?}", lower_bound.lock().unwrap());
                 upperbound = val;
                 best_solution = Some(current_state.clone());
             }
         }
     }
+
+    // should_stop.store(true, Ordering::Relaxed);
+    // println!("Finished, should_stop = {:?}", should_stop);
+    // handle.join().unwrap();
     
     if let Some(best_solution) = best_solution {
         best_solution.export(file_name);

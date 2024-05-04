@@ -25,23 +25,23 @@ mod benchs {
         b.iter(|| branch_and_bound("umps8C", 4, 2));
     }
     
-    #[bench]
-    fn umps10_4_2(b: &mut Bencher) {
-        b.iter(|| branch_and_bound("umps10", 4, 2));
-    }
+    // #[bench]
+    // fn umps10_4_2(b: &mut Bencher) {
+    //     b.iter(|| branch_and_bound("umps10", 4, 2));
+    // }
     
-    #[bench]
-    fn umps10A_4_2(b: &mut Bencher) {
-        b.iter(|| branch_and_bound("umps10A", 4, 2));
-    }
+    // #[bench]
+    // fn umps10A_4_2(b: &mut Bencher) {
+    //     b.iter(|| branch_and_bound("umps10A", 4, 2));
+    // }
     
-    #[bench]
-    fn umps10B_4_2(b: &mut Bencher) {
-        b.iter(|| branch_and_bound("umps10B", 4, 2));
-    }
+    // #[bench]
+    // fn umps10B_4_2(b: &mut Bencher) {
+    //     b.iter(|| branch_and_bound("umps10B", 4, 2));
+    // }
     
-    #[bench]
-    fn umps10C_4_2(b: &mut Bencher) {
-        b.iter(|| branch_and_bound("umps10C", 4, 2));
-    }
+    // #[bench]
+    // fn umps10C_4_2(b: &mut Bencher) {
+    //     b.iter(|| branch_and_bound("umps10C", 4, 2));
+    // }
 }
