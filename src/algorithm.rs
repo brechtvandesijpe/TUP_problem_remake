@@ -1,6 +1,277 @@
-use itertools::Itertools; 
+
 use std::fs::File;
+use std::io::{self, BufRead, BufReader};
 use std::io::prelude::*;
+use std::str::FromStr;
+
+// use std::fs::File;
+// use std::io::{self, BufRead, BufReader};
+// use regex::Regex;
+
+// #[derive(Debug)]
+// pub struct Data {
+//     pub n_teams: i32,
+//     pub dist: Vec<Vec<i128>>,
+//     pub opponents: Vec<Vec<i32>>,
+// }
+
+// pub fn read_data(file_path: &str) -> io::Result<Data> {
+//     let content = std::fs::read_to_string(file_path)?;
+//     let mut re = Regex::new(r"nTeams=(\d+);").unwrap();
+//     let mut caps = re.captures(&content).unwrap();
+//     let n_teams: i32 = caps.get(1).unwrap().as_str().parse().unwrap();
+
+//     re = Regex::new(r"dist=\s*\[\s*((?:\[\s*(?:\d+\s*)+\]\s*)+)\]").unwrap();
+//     let caps = re.captures(&content).unwrap();
+//     let dist_block = caps.get(1).unwrap().as_str();
+//     let mut dist: Vec<Vec<i128>> = dist_block
+//         .lines()
+//         .map(|line| {
+//             line.trim_matches(|c| c == '[' || c == ']')
+//                 .split_whitespace()
+//                 .map(|num| num.parse().unwrap())
+//                 .collect()
+//         })
+//         .collect();
+    
+//     dist.pop(); // Remove the last row
+
+//     re = Regex::new(r"opponents=\s*\[\s*((?:\[\s*(?:-?\d+\s*)+\]\s*)+)\]").unwrap();
+//     let caps = re.captures(&content).unwrap();
+//     let opponents_block = caps.get(1).unwrap().as_str();
+//     let mut opponents: Vec<Vec<i32>> = opponents_block
+//         .lines()
+//         .map(|line| {
+//             line.trim_matches(|c| c == '[' || c == ']')
+//                 .split_whitespace()
+//                 .map(|num| num.parse().unwrap())
+//                 .collect()
+//         })
+//         .collect();
+//         opponents.pop();
+
+//     Ok(Data {
+//         n_teams,
+//         dist,
+//         opponents,
+//     })
+// }
+
+#[derive(Debug)]
+pub struct Data {
+    pub num_teams: i32,
+    pub dist: Vec<Vec<i128>>,
+    pub opponents: Vec<Vec<i32>>,
+}
+
+pub fn read_data(file_path: &str) -> io::Result<Data> {
+    let file = File::open(file_path)?;
+    let reader = BufReader::new(file);
+    let mut lines = reader.lines();
+
+    let mut num_teams = 0;
+    let mut dist = Vec::new();
+    let mut opponents = Vec::new();
+
+    while let Some(line) = lines.next() {
+        let line = line?;
+        if line.contains("nTeams") {
+            num_teams = line.split("=").nth(1).unwrap().split(";").nth(0).unwrap().trim().parse().unwrap();
+        }
+        if line.contains("dist") {
+            dist = read_array_i128(&mut lines, num_teams as usize)?;
+        }
+        if line.contains("opponents") {
+            opponents = read_array_i32(&mut lines, 2 * num_teams as usize - 2)?;
+        }
+    }
+
+    Ok(Data {
+        num_teams,
+        dist,
+        opponents,
+    })
+}
+
+fn read_array_i128(
+    lines: &mut std::io::Lines<BufReader<File>>,
+    rows: usize
+) -> io::Result<Vec<Vec<i128>>> {
+    let mut array = Vec::new();
+
+    for _ in 0..rows {
+        let line = lines.next().unwrap()?;
+        let row: Vec<i128> = line.split(|c: char| c == '[' || c == ']' || c.is_whitespace())
+            .filter(|part| !part.is_empty())
+            .map(|part| i128::from_str(part).unwrap())
+            .collect();
+        array.push(row);
+    }
+
+    Ok(array)
+}
+
+fn read_array_i32(
+    lines: &mut std::io::Lines<BufReader<File>>,
+    rows: usize
+) -> io::Result<Vec<Vec<i32>>> {
+    let mut array = Vec::new();
+
+    for _ in 0..rows {
+        let line = lines.next().unwrap()?;
+        let row: Vec<i32> = line.split(|c: char| c == '[' || c == ']' || c.is_whitespace())
+            .filter(|part| !part.is_empty())
+            .map(|part| i32::from_str(part).unwrap())
+            .collect();
+        array.push(row);
+    }
+
+    Ok(array)
+}
+
+#[derive(Debug)]
+pub struct Game {
+    pub home_player: i32,
+    pub out_player: i32,
+}
+
+impl Game {
+    pub fn new(
+        home_player: i32,
+        out_player: i32
+    ) -> Self {
+        Self {
+            home_player,
+            out_player,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Round {
+    games: Vec<Game>,
+}
+
+impl Round {
+    pub fn new(
+        opponents: Vec<i32>
+    ) -> Self {
+        let mut games = Vec::new();
+        for player in 0..opponents.len() {
+            if opponents[player as usize] < 0 {
+                continue;
+            } else {
+                games.push(Game::new(player as i32 + 1, opponents[player as usize]));
+            }
+        }
+
+        Self {
+            games,
+        }
+    }
+    
+    pub fn to_ints(
+        &self,
+    ) -> Vec<(i32, i32)> {
+        let mut output = Vec::new();
+
+        for game in &self.games {
+            output.push((game.home_player, game.out_player));
+        }
+
+        output
+    }
+}
+
+#[derive(Debug)]
+pub struct Model {
+    rounds: Vec<Round>,
+    pub num_rounds: i32,
+}
+
+impl Model {
+    pub fn new(
+        data: &Data,
+    ) -> Self {
+        let num_rounds: i32 = data.opponents.len().try_into().unwrap();
+        let mut rounds = Vec::new();
+        for i in 0..num_rounds {
+            rounds.push(Round::new(data.opponents[i as usize].clone()));
+        }
+
+        Self {
+            rounds,
+            num_rounds,
+        }
+    }
+
+    pub fn get_round_ints(
+        &self,
+        round_index: i32,
+    ) -> Vec<(i32, i32)> {
+        self.rounds[(round_index - 1) as usize].to_ints()
+    }
+}
+
+pub fn branch_and_bound(
+    file_name: &str,
+    q1: i32,
+    q2: i32
+) -> Result<i128, &'static str> {
+    let data = read_data(format!("resources/{}.txt", file_name).as_str()).unwrap();
+    let model = Model::new(&data);
+    let initial = model.get_round_ints(1);
+
+    let mut upperbound: i128 = std::i128::MAX;
+    let mut best_solution: Option<Node> = None;
+
+    let source = Node::new(
+        None,
+        initial,
+        &data.dist,
+    );
+    
+    // ADD SOURCE NODE TO STACK
+    let mut nodes: Vec<Node> = Vec::new();
+    nodes.push(source);
+
+    // START BRANCH AND BOUND
+    while nodes.len() > 0 {
+        // POP NEW STATE FROM STACK
+        let current_state = nodes.pop().unwrap();
+        
+        // EVALUATE
+        let val = current_state.score;
+        if val < upperbound {
+            if (current_state.round_index as usize) < data.opponents.len() {
+                // ADD ALL FEASIBLE CHILDREN TO EXPLORE
+                let children = current_state.generate_children(q1, q2, model.get_round_ints(current_state.round_index + 1), upperbound, model.num_rounds);
+
+                // CREATE AND ADD ALL CHILDREN
+                if !children.is_empty() {
+                    for child in children {
+                        let new_node = Node::new(
+                            Some(Box::new(current_state.clone())),
+                            child.clone(),
+                            &data.dist,
+                        );
+                        nodes.push(new_node);
+                    }
+                }
+            } else {
+                upperbound = val;
+                best_solution = Some(current_state.clone());
+            }
+        }
+    }
+    
+    if let Some(best_solution) = best_solution {
+        best_solution.export(file_name);
+        return Ok(best_solution.score);
+    }
+
+    Err("No solution found")
+}
 
 fn permutate(vec: &mut Vec<(i32, i32)>, start: usize, result: &mut Vec<Vec<(i32, i32)>>) {
     if start >= vec.len() {

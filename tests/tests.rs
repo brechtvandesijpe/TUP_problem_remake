@@ -1,5 +1,5 @@
 #[cfg(test)]
-mod tests {    
+mod tests {
     use TUP_problem_remake::algorithm::Node;
 
     #[test]
