@@ -167,6 +167,7 @@ fn calculate_lowerbound(
     initial: Arc<Vec<(i32, i32)>>,
     dist: Arc<Vec<Vec<i128>>>,
     lowerbound: Arc<Mutex<i32>>,
+    max_rounds: i32,
 ) {
     let source = Node::new(
         None,
@@ -174,7 +175,11 @@ fn calculate_lowerbound(
         &dist,
     );
 
-    println!("{}", source);
+    let rounds_lbs: Vec<Vec<i128>> = vec![vec![0; max_rounds as usize]; max_rounds as usize];
+
+    for num_rounds in 1..max_rounds + 1 {
+
+    }
 }
 
 pub fn branch_and_bound(
@@ -210,7 +215,7 @@ pub fn branch_and_bound(
 
     let _ = thread::spawn(
         move || {
-            calculate_lowerbound(initial_clone_lb, dist_clone_lb, lowerbound_clone)
+            calculate_lowerbound(initial_clone_lb, dist_clone_lb, lowerbound_clone, model.num_rounds)
         }
     );
 
@@ -239,7 +244,7 @@ pub fn branch_and_bound(
                 }
             } else {
                 upperbound = val;
-                println!("lowerbound = {:?}, upperbound = {:?}", lowerbound.lock().unwrap(), upperbound);
+                // println!("lowerbound = {:?}, upperbound = {:?}", lowerbound.lock().unwrap(), upperbound);
                 best_solution = Some(current_state.clone());
             }
         }
