@@ -166,7 +166,7 @@ impl Model {
 fn calculate_lowerbound(
     initial: Arc<Vec<(i32, i32)>>,
     dist: Arc<Vec<Vec<i128>>>,
-    lowerbound: Arc<Mutex<i32>>,
+    lowerbound: Arc<Mutex<i128>>,
     max_rounds: i32,
 ) {
     let source = Node::new(
@@ -175,10 +175,22 @@ fn calculate_lowerbound(
         &dist,
     );
 
-    let rounds_lbs: Vec<Vec<i128>> = vec![vec![0; max_rounds as usize]; max_rounds as usize];
+    let mut rounds_lbs: Vec<Vec<i128>> = vec![vec![0; max_rounds as usize]; max_rounds as usize];
 
-    for num_rounds in 1..max_rounds + 1 {
-
+    for k in 2..max_rounds {
+        let r: i32 = max_rounds - 1 - k;
+        let solution: i128 = 0;
+        for r1 in (0..=r).rev() {
+            for r2 in r + k..max_rounds {
+                let best_val = std::cmp::max(
+                                  std::cmp::max(rounds_lbs[r1 as usize][r2 as usize], rounds_lbs[r1 as usize][r as usize] + solution),
+                                  rounds_lbs[(r + k) as usize][r2 as usize]);
+                if best_val != rounds_lbs[r1 as usize][r2 as usize] {
+                    *lowerbound.lock().unwrap() = best_val;
+                }
+                rounds_lbs[r1 as usize][r2 as usize] = best_val;
+            }
+        }
     }
 }
 
@@ -205,8 +217,8 @@ pub fn branch_and_bound(
     nodes.push(source.clone());
 
     // START LWOERBOUND_THREAD
-    let lowerbound = Arc::new(Mutex::new(0));
-    let lowerbound_clone = Arc::clone(&lowerbound);
+    let lowerbound: Arc<Mutex<i128>> = Arc::new(Mutex::new(0));
+    let lowerbound_clone: Arc<Mutex<i128>> = Arc::clone(&lowerbound);
 
     let dist_clone = Arc::new(data.dist.clone());
     let dist_clone_lb = Arc::clone(&dist_clone);
@@ -226,7 +238,8 @@ pub fn branch_and_bound(
         
         // EVALUATE
         let val = current_state.score;
-        if val < upperbound {
+        let lb_val = *lowerbound.lock().unwrap();
+        if val >= lb_val && val < upperbound {
             if (current_state.round_index as usize) < data.opponents.len() {
                 // ADD ALL FEASIBLE CHILDREN TO EXPLORE
                 let children = current_state.generate_children(q1, q2, model.get_round_ints(current_state.round_index + 1), upperbound, model.num_rounds);
@@ -244,15 +257,14 @@ pub fn branch_and_bound(
                 }
             } else {
                 upperbound = val;
-                // println!("lowerbound = {:?}, upperbound = {:?}", lowerbound.lock().unwrap(), upperbound);
                 best_solution = Some(current_state.clone());
             }
         }
-    }
 
-    // should_stop.store(true, Ordering::Relaxed);
-    // println!("Finished, should_stop = {:?}", should_stop);
-    // handle.join().unwrap();
+        if lb_val == upperbound {
+            break;
+        }
+    }
     
     if let Some(best_solution) = best_solution {
         best_solution.export(file_name);
