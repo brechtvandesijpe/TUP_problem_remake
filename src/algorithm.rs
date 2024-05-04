@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::io::prelude::*;
 use std::str::FromStr;
-use std::sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}};
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
@@ -164,9 +164,17 @@ impl Model {
 }
 
 fn calculate_lowerbound(
-    source_node: &Node,
+    initial: Arc<Vec<(i32, i32)>>,
+    dist: Arc<Vec<Vec<i128>>>,
+    lowerbound: Arc<Mutex<i32>>,
 ) {
+    let source = Node::new(
+        None,
+        (*initial).clone(),
+        &dist,
+    );
 
+    println!("{}", source);
 }
 
 pub fn branch_and_bound(
@@ -183,28 +191,28 @@ pub fn branch_and_bound(
 
     let source = Node::new(
         None,
-        initial,
+        initial.clone(),
         &data.dist,
     );
     
     // ADD SOURCE NODE TO STACK
     let mut nodes: Vec<Node> = Vec::new();
-    nodes.push(source);
+    nodes.push(source.clone());
 
     // START LWOERBOUND_THREAD
-    let lower_bound = Arc::new(Mutex::new(0));
-    let lower_bound_clone = Arc::clone(&lower_bound);
+    let lowerbound = Arc::new(Mutex::new(0));
+    let lowerbound_clone = Arc::clone(&lowerbound);
 
-    let should_stop = Arc::new(AtomicBool::new(false));
-    let should_stop_clone = Arc::clone(&should_stop);
+    let dist_clone = Arc::new(data.dist.clone());
+    let dist_clone_lb = Arc::clone(&dist_clone);
+    let initial_clone = Arc::new(initial.clone());
+    let initial_clone_lb = Arc::clone(&initial_clone);
 
-    let handle = thread::spawn(move || {
-        loop {
-            thread::sleep(Duration::from_millis(1));
-            let mut num = lower_bound_clone.lock().unwrap();
-            *num += 1;
+    let _ = thread::spawn(
+        move || {
+            calculate_lowerbound(initial_clone_lb, dist_clone_lb, lowerbound_clone)
         }
-    });
+    );
 
     // START BRANCH AND BOUND
     while nodes.len() > 0 {
@@ -230,8 +238,8 @@ pub fn branch_and_bound(
                     }
                 }
             } else {
-                println!("Lowerbound = {:?}", lower_bound.lock().unwrap());
                 upperbound = val;
+                println!("lowerbound = {:?}, upperbound = {:?}", lowerbound.lock().unwrap(), upperbound);
                 best_solution = Some(current_state.clone());
             }
         }
