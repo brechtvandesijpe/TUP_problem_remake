@@ -22,6 +22,9 @@ fn main() {
     // CREATE INITIAL NODE
     let initial = model.get_round_ints(1);
 
+    let mut upperbound: i128 = std::i128::MAX;
+    let mut best_solution: Option<Node> = None;
+
     let source = Node::new(
         None,
         initial,
@@ -32,14 +35,11 @@ fn main() {
     let mut nodes: Vec<Node> = Vec::new();
     nodes.push(source);
 
-    let mut upperbound: i128 = std::i128::MAX;
-    let mut best_solution: Option<Node> = None;
 
     // START BRANCH AND BOUND
     while nodes.len() > 0 {
         // POP NEW STATE FROM STACK
         let current_state = nodes.pop().unwrap();
-        println!("{:?}", current_state);
         
         // EVALUATE
         // let current_state = current_state.evaluate();
@@ -52,9 +52,8 @@ fn main() {
                 // println!("round_index = {}, len children = {}, len stack = {}", current_state.round_index, children.len(), nodes.len());
                 if children.len() > 0 {
                     for child in children {
-                        let parent = current_state.clone();
                         let new_node = Node::new(
-                            Some(Box::new(parent)),
+                            Some(Box::new(current_state.clone())),
                             child.clone(),
                             &data.dist,
                         );

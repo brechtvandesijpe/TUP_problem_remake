@@ -79,53 +79,41 @@ impl<'a> Node<'a> {
         new_assignments: Vec<(i32, i32)>,
         dist: &'a Vec<Vec<i128>>,
     ) -> Self {
-        let round_index = parent.clone().map(|n| n.round_index).unwrap_or(0) + 1;
-        let mut visited_teams = parent.clone().map(|n| n.visited_teams).unwrap_or(vec![vec![false; new_assignments.len() * 2]; new_assignments.len()]);
+        let mut visited_teams: Vec<Vec<bool>> = vec![vec![false; new_assignments.len() * 2]; new_assignments.len()];
         for i in 0..new_assignments.len() {
             let assignment = &new_assignments[i];
             visited_teams[i as usize][(assignment.0 - 1) as usize] = true;
         }
-
-        // println!("round_index = {:?}, new_assignments = {:?}, visited_teams = {:?}", round_index, new_assignments, visited_teams);
-        let mut my_extras = 0;
-        if let Some(ref parent) = parent {
+        let mut round_index = 1;
+        let mut score: i128 = 0;
+        if let Some(parent) = &parent {
+            round_index += parent.round_index;
+            score += parent.score;
             for i in 0..new_assignments.len() {
                 let new_assignment = &new_assignments[i];
                 let previous_assignment = parent.new_assignments[i];
                 let from = previous_assignment.0 - 1;
                 let to = new_assignment.0 - 1;
-                my_extras += dist[from as usize][to as usize];
+                score += dist[from as usize][to as usize];
+            }
+
+            for i in 0..visited_teams.len() {
+                for j in 0..visited_teams[i].len() {
+                    if parent.visited_teams[i][j] == true {
+                        visited_teams[i][j] = true;
+                    }
+                }
             }
         }
 
         Self {
-            parent: parent.clone(),
+            parent: parent,
             new_assignments,
-            score: parent.clone().map(|n| n.score + my_extras).unwrap_or(0),
+            score,
             round_index,
             dist,
             visited_teams,
         }
-
-        // if round_index == 14 {
-        //     me.export_string();
-        //     println!("new_assignments = {:?}, visited_teams = {:?}", new_assignments, visited_teams);
-        // }
-    }
-
-    pub fn evaluate(
-        mut self,
-    ) -> Self {
-        if let Some(ref parent) = self.parent {
-            let previous_locations: Vec<i32> = parent.get_current_locations();
-            for i in 0..previous_locations.len() {
-                let from: i32 = previous_locations[i] - 1;
-                let to: i32 = self.new_assignments[i].0 - 1;
-                self.score += self.dist[from as usize][to as usize];
-            }
-        }
-
-        self
     }
 
     pub fn pre_evaluate(
@@ -198,34 +186,43 @@ impl<'a> Node<'a> {
             return result;
         }
 
+        let num_checks_q1 = q1 - 1;
+        let stop_round_q1 = self.round_index - num_checks_q1;
+
+        if let Some(parent) = &self.parent {
+            if !parent.check_q1(num_checks_q1, &self.new_assignments) {
+                return result;
+            }
+        }
+
+        let num_checks_q2 = q1 - 1;
+        let stop_round_q2 = self.round_index - num_checks_q2;
+
+        if let Some(parent) = &self.parent {
+            if !parent.check_q1(num_checks_q1, &self.new_assignments) {
+                return result;
+            }
+        }
+        
+        if !self.check_global(num_rounds - self.round_index - 1) {
+            return result;
+        }
+
         permutate(&mut options, 0, &mut result);
         result.into_iter()
             .filter(|perm| {
-                // let is_global = self.check_global_mutations(num_rounds - self.round_index, perm);
-                // if !is_global {
-                //     return false;
-                // }
-                let num_checks = q1 - 1;
-                let stop_round = self.round_index - num_checks;
-                // println!("Q1 => round_index {}, stop_round = {}", self.round_index, stop_round);
-                let is_q1 = self.check_q1(stop_round, perm);
-                if !is_q1 {
-//                     println!(r#"Q1:
-// {}
-// {:?}
-// "#, self, perm);
+                let is_global = self.check_global_mutations(num_rounds - self.round_index, perm);
+                if !is_global {
                     return false;
                 }
 
-                let num_checks = q2 - 1;
-                let stop_round = self.round_index - num_checks;
-                // println!("Q2 => round_index {}, stop_round = {}", self.round_index, stop_round);
-                let is_q2 = self.check_q2(stop_round, perm);
+                let is_q1 = self.check_q1(stop_round_q1, perm);
+                if !is_q1 {
+                    return false;
+                }
+
+                let is_q2 = self.check_q2(stop_round_q2, perm);
                 if !is_q2 {
-//                     println!(r#"Q2:
-// {}
-// {:?}
-// "#, self, perm);
                     return false;
                 }
 
@@ -252,18 +249,14 @@ impl<'a> Node<'a> {
     ) -> bool {
         let mut result = true;
 
-        // println!("{:?} < {:?}", stop_round, self.round_index);
         if self.round_index != 1 && stop_round < self.round_index {
             if let Some(parent) = &self.parent {
                 result = parent.check_q1(stop_round, perm);
             } else {};
         }
         
-        // println!("q1 = {:?}, round = {:?}, new_assignments = {:?}, assignments = {:?}", q1, self.round_index , self.new_assignments, assignments);
         let is_visited = self.is_visited(perm);
-        result = result && !is_visited;
-        // println!("result = {:?}, is_visited = {:?}", result, is_visited);
-        result
+        result && !is_visited
     }
 
     pub fn check_q2(
@@ -279,11 +272,8 @@ impl<'a> Node<'a> {
             }
         }
         
-        // println!("q2 = {:?}, round = {:?}, new_assignments = {:?}, assignments = {:?}", q2, self.round_index , self.new_assignments, assignments);
         let is_officiated = self.is_officiated(assignments);
-        result = result && !is_officiated;
-        // println!("result = {:?}, is_visited = {:?}", result, is_officiated);
-        result
+        result && !is_officiated
     }
 
     pub fn is_visited(
@@ -294,7 +284,6 @@ impl<'a> Node<'a> {
             let assignment = assignments[i];
             let new_assignment = self.new_assignments[i];
             if assignment.0 == new_assignment.0 {
-                // println!("Visited equals on assignment = {:?}, new_assignment = {:?}", assignment, new_assignment);
                 return true;
             }
         }
@@ -312,7 +301,6 @@ impl<'a> Node<'a> {
             
             if assignment.0 == new_assignment.0 || assignment.0 == new_assignment.1 || 
                assignment.1 == new_assignment.0 || assignment.1 == new_assignment.1 {
-                // println!("{:?} - {:?}", assignment, new_assignment);
                 return true;
             }
         }
@@ -327,7 +315,6 @@ impl<'a> Node<'a> {
         
         if let Some(parent) = &self.parent {
             result = parent.export_vec();
-            // println!("{:?} = {:?}", self.new_assignments, self.score);
         } else {
             result = Vec::new();
             for i in 0..self.new_assignments.len() {
@@ -346,7 +333,7 @@ impl<'a> Node<'a> {
         &self,
         name: &str,
     ) {
-        let mut result = self.export_vec();
+        let result = self.export_vec();
         let _  =File::create(format!("solution_{}.txt", name))
                             .expect("Could not create file")
                             .write_all(format!("{}", self)
@@ -357,7 +344,7 @@ impl<'a> Node<'a> {
         &self,
         name: &str,
     ) {
-        let mut result = self.export_vec();
+        let result = self.export_vec();
         let mut file = File::create(format!("solution_{}.txt", name)).expect("Could not create file");
         for i in 0..result.len() {
             for j in 0..result[i].len() {
