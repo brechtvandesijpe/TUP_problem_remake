@@ -194,7 +194,7 @@ fn calculate_lowerbound(
 
         source = source.set_round_index(r);
 
-        let mut best: i128 = 0;
+        let mut best: i128 = std::i128::MAX;
         let mut nodes: Vec<Node> = Vec::new();
         nodes.push(source);
 
@@ -205,14 +205,13 @@ fn calculate_lowerbound(
             
             // EVALUATE
             let val = current_state.score;
-            if val >= best {
-                if (current_state.round_index as usize) == (r + k) as usize {
-                    println!("Update on {}", r + k);
+            if val < best {
+                if (current_state.round_index as usize) == (r + k + 1) as usize {
                     best = val;
                 } else {
                     // ADD ALL FEASIBLE CHILDREN TO EXPLORE
                     let options = model.get_round_ints(current_state.round_index + 1);
-                    let children = current_state.generate_children(q1, q2, options, best, max_rounds, false);
+                    let children = current_state.generate_children(q1, q2, options, best, max_rounds, true);
                     
                     // CREATE AND ADD ALL CHILDREN
                     if !children.is_empty() {
@@ -228,6 +227,8 @@ fn calculate_lowerbound(
                 }
             }
         }
+
+        println!("best value = {}", best);
 
         // println!("best = {}, k = {}, r = {}", best, k, r);
         for r1 in (0..=r).rev() {
@@ -245,10 +246,8 @@ fn calculate_lowerbound(
                 *rounds_lbs[r1 as usize][r2 as usize].borrow_mut() = best_val;
             }
         }
-        // println!("r + k = {}, r = {}, k = {}", r + k, r, k);
-        pretty_print(&rounds_lbs);
 
-        // println!("{:?}", rounds_lbs);
+        pretty_print(&rounds_lbs);
     }
 }
 
@@ -284,7 +283,7 @@ pub fn branch_and_bound(
 
     let num_rounds = model.num_rounds;
     let model_clone = model.clone();
-    let _ = thread::spawn(
+    let handle = thread::spawn(
         move || {
             calculate_lowerbound(
                 dist_clone_lb,
@@ -297,6 +296,8 @@ pub fn branch_and_bound(
         }
     );
 
+    handle.join().unwrap();
+
     // START BRANCH AND BOUND
     while nodes.len() > 0 {
         // POP NEW STATE FROM STACK
@@ -308,7 +309,7 @@ pub fn branch_and_bound(
         if val >= lb_val[(num_rounds - 1) as usize][(current_state.round_index - 1) as usize] && val < upperbound {
             if (current_state.round_index as usize) < num_rounds as usize {
                 // ADD ALL FEASIBLE CHILDREN TO EXPLORE
-                let children = current_state.generate_children(q1, q2, model.get_round_ints(current_state.round_index + 1), upperbound, num_rounds, true);
+                let children = current_state.generate_children(q1, q2, model.get_round_ints(current_state.round_index + 1), upperbound, num_rounds, false);
 
                 // CREATE AND ADD ALL CHILDREN
                 if !children.is_empty() {
@@ -512,14 +513,14 @@ impl<'a> Node<'a> {
         &self,
         q1: i32,
         q2: i32,
-        mut options: Vec<(i32, i32)>,
+        options: Vec<(i32, i32)>,
         best: i128,
         num_rounds: i32,
-        is_minimizing: bool,
+        is_lowerbound: bool,
     ) -> Vec<Vec<(i32, i32)>> {
         let mut result = Vec::new();
 
-        if is_minimizing && !self.check_global(num_rounds - self.round_index - 1) {
+        if !is_lowerbound && !self.check_global(num_rounds - self.round_index - 1) {
             return result;
         }
 
@@ -561,18 +562,10 @@ impl<'a> Node<'a> {
 
                 let is_pre_evaluated = self.pre_evaluate(perm, best);
 
-                if is_minimizing {
-                    if !is_pre_evaluated {
-                        counter += 1;
-                        // println!("EVAL! Counter: {}", counter);
-                        return false;
-                    }
-                } else {
-                    if is_pre_evaluated {
-                        counter += 1;
-                        // println!("EVAL! Counter: {}", counter);
-                        return false;
-                    }
+                if !is_pre_evaluated {
+                    counter += 1;
+                    // println!("EVAL! Counter: {}", counter);
+                    return false;
                 }
 
                 true
@@ -661,7 +654,7 @@ impl<'a> Node<'a> {
             result = parent.export_vec();
         } else {
             result = Vec::new();
-            for i in 0..self.new_assignments.len() {
+            for _ in 0..self.new_assignments.len() {
                 result.push(Vec::new());
             }
         }
@@ -677,7 +670,7 @@ impl<'a> Node<'a> {
         &self,
         name: &str,
     ) {
-        let result = self.export_vec();
+        let _ = self.export_vec();
         let _  =File::create(format!("solution_{}.txt", name))
                             .expect("Could not create file")
                             .write_all(format!("{}", self)
