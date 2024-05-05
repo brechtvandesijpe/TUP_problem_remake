@@ -42,41 +42,7 @@ mod tests {
     }
 
     #[test]
-    pub fn q1_constraint_checker_wrong_full() {
-        let dist = vec![
-            vec![0, 1, 1, 1, 1, 1, 1, 1],
-            vec![1, 0, 1, 1, 1, 1, 1, 1],
-            vec![1, 1, 0, 1, 1, 1, 1, 1],
-            vec![1, 1, 1, 0, 1, 1, 1, 1],
-            vec![1, 1, 1, 1, 0, 1, 1, 1],
-            vec![1, 1, 1, 1, 1, 0, 1, 1],
-            vec![1, 1, 1, 1, 1, 1, 0, 1],
-            vec![1, 1, 1, 1, 1, 1, 1, 0],
-        ];
-
-        let round_one = Node::new(
-            None,
-            vec![(2, 4), (3, 6), (1, 7), (5, 8)],
-            &dist,
-        );
-
-        let round_two = Node::new(
-            Some(Box::new(round_one)),
-            vec![(5, 7), (4, 1), (6, 8), (3, 2)],
-            &dist,
-        );
-
-        let round_three = Node::new(
-            Some(Box::new(round_two)),
-            vec![(6, 3), (8, 7), (2, 1), (4, 5)],
-            &dist,
-        );
-
-        assert!(!round_three.check_q1(1, &vec![(8, 4), (2, 5), (7, 6), (3, 1)]));
-    }
-
-    #[test]
-    pub fn q1_constraint_checker_qval() {
+    pub fn q1_constraint() {
         let dist = vec![
             vec![0, 1, 1, 1, 1, 1, 1, 1],
             vec![1, 0, 1, 1, 1, 1, 1, 1],
@@ -134,6 +100,66 @@ mod tests {
     }
 
     #[test]
+    pub fn q1_constraint_sub() {
+        let dist = vec![
+            vec![0, 1, 1, 1, 1, 1, 1, 1],
+            vec![1, 0, 1, 1, 1, 1, 1, 1],
+            vec![1, 1, 0, 1, 1, 1, 1, 1],
+            vec![1, 1, 1, 0, 1, 1, 1, 1],
+            vec![1, 1, 1, 1, 0, 1, 1, 1],
+            vec![1, 1, 1, 1, 1, 0, 1, 1],
+            vec![1, 1, 1, 1, 1, 1, 0, 1],
+            vec![1, 1, 1, 1, 1, 1, 1, 0],
+        ];
+
+        let mut round_one = Node::new(
+            None,
+            vec![(1, 5), (4, 8), (6, 2), (7, 3)],
+            &dist,
+        );
+
+        round_one = round_one.set_round_index(5);
+
+        let round_two = Node::new(
+            Some(Box::new(round_one)),
+            vec![(2, 8), (5, 3), (4, 7), (1, 6)],
+            &dist,
+        );
+
+        let round_three = Node::new(
+            Some(Box::new(round_two)),
+            vec![(5, 6), (1, 4), (3, 8), (2, 7)],
+            &dist,
+        );
+
+        let round_four = Node::new(
+            Some(Box::new(round_three)),
+            vec![(3, 7), (8, 2), (5, 4), (6, 1)],
+            &dist,
+        );
+
+        assert!(!round_four.check_q1(5, &vec![(1, 5), (4, 8), (6, 2), (7, 3)]));
+        assert!(!round_four.check_q1(5, &vec![(2, 8), (5, 3), (4, 7), (1, 6)]));
+        assert!(!round_four.check_q1(5, &vec![(5, 6), (1, 4), (3, 8), (2, 7)]));
+        assert!(!round_four.check_q1(5, &vec![(3, 7), (8, 2), (5, 4), (6, 1)]));
+
+        assert!(round_four.check_q1(6, &vec![(1, 5), (4, 8), (6, 2), (7, 3)]));
+        assert!(!round_four.check_q1(6, &vec![(2, 8), (5, 3), (4, 7), (1, 6)]));
+        assert!(!round_four.check_q1(6, &vec![(5, 6), (1, 4), (3, 8), (2, 7)]));
+        assert!(!round_four.check_q1(6, &vec![(3, 7), (8, 2), (5, 4), (6, 1)]));
+        
+        assert!(round_four.check_q1(7, &vec![(1, 5), (4, 8), (6, 2), (7, 3)]));
+        assert!(round_four.check_q1(7, &vec![(2, 8), (5, 3), (4, 7), (1, 6)]));
+        assert!(!round_four.check_q1(7, &vec![(5, 6), (1, 4), (3, 8), (2, 7)]));
+        assert!(!round_four.check_q1(7, &vec![(3, 7), (8, 2), (5, 4), (6, 1)]));
+        
+        assert!(round_four.check_q1(8, &vec![(1, 5), (4, 8), (6, 2), (7, 3)]));
+        assert!(round_four.check_q1(8, &vec![(2, 8), (5, 3), (4, 7), (1, 6)]));
+        assert!(round_four.check_q1(8, &vec![(5, 6), (1, 4), (3, 8), (2, 7)]));
+        assert!(!round_four.check_q1(8, &vec![(3, 7), (8, 2), (5, 4), (6, 1)]));
+    }
+
+    #[test]
     pub fn is_officiated() {
         let dist = vec![
             vec![0, 1, 1, 1, 1, 1, 1, 1],
@@ -174,41 +200,7 @@ mod tests {
     }
 
     #[test]
-    pub fn q2_constraint_checker_wrong_full() {
-        let dist = vec![
-            vec![0, 1, 1, 1, 1, 1, 1, 1],
-            vec![1, 0, 1, 1, 1, 1, 1, 1],
-            vec![1, 1, 0, 1, 1, 1, 1, 1],
-            vec![1, 1, 1, 0, 1, 1, 1, 1],
-            vec![1, 1, 1, 1, 0, 1, 1, 1],
-            vec![1, 1, 1, 1, 1, 0, 1, 1],
-            vec![1, 1, 1, 1, 1, 1, 0, 1],
-            vec![1, 1, 1, 1, 1, 1, 1, 0],
-        ];
-
-        let round_one = Node::new(
-            None,
-            vec![(2, 4), (3, 6), (1, 7), (5, 8)],
-            &dist,
-        );
-
-        let round_two = Node::new(
-            Some(Box::new(round_one)),
-            vec![(5, 7), (4, 1), (6, 8), (3, 2)],
-            &dist,
-        );
-
-        let round_three = Node::new(
-            Some(Box::new(round_two)),
-            vec![(6, 3), (8, 7), (2, 1), (4, 5)],
-            &dist,
-        );
-
-        assert!(!round_three.check_q2(1, &vec![(8, 4), (2, 5), (7, 6), (3, 1)]));
-    }
-
-    #[test]
-    pub fn q2_constraint_checker_qval() {
+    pub fn q2_constraint() {
         let dist = vec![
             vec![0, 1, 1, 1, 1, 1, 1, 1],
             vec![1, 0, 1, 1, 1, 1, 1, 1],
@@ -266,7 +258,67 @@ mod tests {
     }
 
     #[test]
-    pub fn global_constraint_checker() {
+    pub fn q2_constraint_sub() {
+        let dist = vec![
+            vec![0, 1, 1, 1, 1, 1, 1, 1],
+            vec![1, 0, 1, 1, 1, 1, 1, 1],
+            vec![1, 1, 0, 1, 1, 1, 1, 1],
+            vec![1, 1, 1, 0, 1, 1, 1, 1],
+            vec![1, 1, 1, 1, 0, 1, 1, 1],
+            vec![1, 1, 1, 1, 1, 0, 1, 1],
+            vec![1, 1, 1, 1, 1, 1, 0, 1],
+            vec![1, 1, 1, 1, 1, 1, 1, 0],
+        ];
+
+        let mut round_one = Node::new(
+            None,
+            vec![(1, 5), (4, 8), (6, 2), (7, 3)],
+            &dist,
+        );
+
+        round_one = round_one.set_round_index(5);
+
+        let round_two = Node::new(
+            Some(Box::new(round_one)),
+            vec![(2, 8), (5, 3), (4, 7), (1, 6)],
+            &dist,
+        );
+
+        let round_three = Node::new(
+            Some(Box::new(round_two)),
+            vec![(5, 6), (1, 4), (3, 8), (2, 7)],
+            &dist,
+        );
+
+        let round_four = Node::new(
+            Some(Box::new(round_three)),
+            vec![(3, 7), (8, 2), (5, 4), (6, 1)],
+            &dist,
+        );
+
+        assert!(!round_four.check_q2(5, &vec![(1, 5), (4, 8), (6, 2), (7, 3)]));
+        assert!(!round_four.check_q2(5, &vec![(2, 8), (5, 3), (4, 7), (1, 6)]));
+        assert!(!round_four.check_q2(5, &vec![(5, 6), (1, 4), (3, 8), (2, 7)]));
+        assert!(!round_four.check_q2(5, &vec![(3, 7), (8, 2), (5, 4), (6, 1)]));
+
+        assert!(!round_four.check_q2(6, &vec![(1, 5), (4, 8), (6, 2), (7, 3)]));
+        assert!(!round_four.check_q2(6, &vec![(2, 8), (5, 3), (4, 7), (1, 6)]));
+        assert!(!round_four.check_q2(6, &vec![(5, 6), (1, 4), (3, 8), (2, 7)]));
+        assert!(!round_four.check_q2(6, &vec![(3, 7), (8, 2), (5, 4), (6, 1)]));
+        
+        assert!(!round_four.check_q2(7, &vec![(1, 5), (4, 8), (6, 2), (7, 3)]));
+        assert!(!round_four.check_q2(7, &vec![(2, 8), (5, 3), (4, 7), (1, 6)]));
+        assert!(!round_four.check_q2(7, &vec![(5, 6), (1, 4), (3, 8), (2, 7)]));
+        assert!(!round_four.check_q2(7, &vec![(3, 7), (8, 2), (5, 4), (6, 1)]));
+        
+        assert!(!round_four.check_q2(8, &vec![(1, 5), (4, 8), (6, 2), (7, 3)]));
+        assert!(!round_four.check_q2(8, &vec![(2, 8), (5, 3), (4, 7), (1, 6)]));
+        assert!(round_four.check_q2(8, &vec![(5, 6), (1, 4), (3, 8), (2, 7)]));
+        assert!(!round_four.check_q2(8, &vec![(3, 7), (8, 2), (5, 4), (6, 1)]));
+    }
+
+    #[test]
+    pub fn global_constraint() {
         let dist = vec![
             vec![0, 1, 1, 1],
             vec![1, 0, 1, 1],

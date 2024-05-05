@@ -7,6 +7,7 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::borrow::Borrow;
 use std::borrow::BorrowMut;
+use itertools::Itertools;
 
 #[derive(Debug)]
 pub struct Data {
@@ -173,7 +174,6 @@ fn pretty_print(
 }
 
 fn calculate_lowerbound(
-    initial: Arc<Vec<(i32, i32)>>,
     dist: Arc<Vec<Vec<i128>>>,
     rounds_lbs: Arc<Mutex<Vec<Vec<i128>>>>,
     max_rounds: i32,
@@ -181,17 +181,21 @@ fn calculate_lowerbound(
     q2: i32,
     model: Model,
 ) {
-    for k in 2..max_rounds {
+    let mut rounds_lbs = rounds_lbs.lock().unwrap().clone();
+    for k in 0..max_rounds {
         let r: i32 = max_rounds - 1 - k;
-        let source = Node::new(
+
+        let mut source = Node::new(
             None,
-            (*initial).clone(),
+            model.get_round_ints(r).clone(),
             &dist,
         );
 
-        let mut upperbound = 0;
+        source = source.set_round_index(r);
+
+        let mut best: i128 = 0;
         let mut nodes: Vec<Node> = Vec::new();
-        nodes.push(source.clone());
+        nodes.push(source);
 
         // START BRANCH AND BOUND
         while nodes.len() > 0 {
@@ -200,10 +204,11 @@ fn calculate_lowerbound(
             
             // EVALUATE
             let val = current_state.score;
-            if val >= upperbound {
-                if (current_state.round_index as usize) < k as usize {
+            if val >= best {
+                if (current_state.round_index as usize) < (r + k) as usize {
                     // ADD ALL FEASIBLE CHILDREN TO EXPLORE
-                    let children = current_state.generate_children(q1, q2, model.get_round_ints(current_state.round_index + 1), upperbound, max_rounds, false);
+                    let options = model.get_round_ints(current_state.round_index + 1);
+                    let children = current_state.generate_children(q1, q2, options, best, max_rounds, false);
                     
                     // CREATE AND ADD ALL CHILDREN
                     if !children.is_empty() {
@@ -217,22 +222,26 @@ fn calculate_lowerbound(
                         }
                     }
                 } else {
-                    upperbound = val;
+                    best = val;
                 }
             }
         }
 
-        let mut rounds_lbs = rounds_lbs.lock().unwrap().clone();
+        // println!("best = {}, k = {}, r = {}", best, k, r);
         for r1 in (0..=r).rev() {
-            for r2 in r + k..max_rounds {
-                let best_val = std::cmp::max(
-                    std::cmp::max(rounds_lbs[r1 as usize][r2 as usize].borrow_mut().clone(), rounds_lbs[r1 as usize][r as usize].borrow().clone() + upperbound),
-                    rounds_lbs[(r + k) as usize][r2 as usize].borrow_mut().clone()
-                );
+            for r2 in (r + k)..max_rounds {
+                let val_1: i128 = rounds_lbs[r1 as usize][r2 as usize].borrow_mut().clone();
+                let val_2: i128 = rounds_lbs[r1 as usize][r as usize].borrow().clone() + best;
+                let val_3: i128 = rounds_lbs[(r + k) as usize][r2 as usize].borrow_mut().clone();
+                let best_val = std::cmp::max(val_1, std::cmp::max(val_2, val_3));
+                // println!("val_1 = {}", val_1);
+                // println!("val_2 = {}", val_2);
+                // println!("val_3 = {}", val_3);
+                // println!("best_val = {}", best_val);
                 *rounds_lbs[r1 as usize][r2 as usize].borrow_mut() = best_val;
-                pretty_print(&rounds_lbs);
             }
         }
+        pretty_print(&rounds_lbs);
 
         // println!("{:?}", rounds_lbs);
     }
@@ -245,6 +254,7 @@ pub fn branch_and_bound(
 ) -> Result<i128, &'static str> {
     let data = read_data(format!("resources/{}.txt", file_name).as_str()).unwrap();
     let model = Model::new(&data);
+
     let initial = model.get_round_ints(1);
 
     let mut upperbound: i128 = std::i128::MAX;
@@ -266,15 +276,12 @@ pub fn branch_and_bound(
 
     let dist_clone = Arc::new(data.dist.clone());
     let dist_clone_lb = Arc::clone(&dist_clone);
-    let initial_clone = Arc::new(initial.clone());
-    let initial_clone_lb = Arc::clone(&initial_clone);
 
     let num_rounds = model.num_rounds;
     let model_clone = model.clone();
     let _ = thread::spawn(
         move || {
             calculate_lowerbound(
-                initial_clone_lb,
                 dist_clone_lb,
                 lowerbound_clone,
                 num_rounds,
@@ -293,7 +300,7 @@ pub fn branch_and_bound(
         // EVALUATE
         let val = current_state.score;
         let lb_val = lowerbound.lock().unwrap().clone();
-        if val >= lb_val[(current_state.round_index - 1) as usize][(num_rounds - 1) as usize] && val < upperbound {
+        if val >= lb_val[(num_rounds - 1) as usize][(current_state.round_index - 1) as usize] && val < upperbound {
             if (current_state.round_index as usize) < num_rounds as usize {
                 // ADD ALL FEASIBLE CHILDREN TO EXPLORE
                 let children = current_state.generate_children(q1, q2, model.get_round_ints(current_state.round_index + 1), upperbound, num_rounds, true);
@@ -311,7 +318,7 @@ pub fn branch_and_bound(
                 }
             } else {
                 upperbound = val;
-                println!("lb = {}, ub = {}", lb_val[(current_state.round_index - 1) as usize][(num_rounds - 1) as usize], upperbound);
+                println!("lb = {}, ub = {}", lb_val[(num_rounds - 1) as usize][(current_state.round_index - 1) as usize], upperbound);
                 best_solution = Some(current_state.clone());
             }
         }
@@ -327,18 +334,6 @@ pub fn branch_and_bound(
     }
 
     Err("No solution found")
-}
-
-fn permutate(vec: &mut Vec<(i32, i32)>, start: usize, result: &mut Vec<Vec<(i32, i32)>>) {
-    if start >= vec.len() {
-        result.push(vec.clone());
-    } else {
-        for i in start..vec.len() {
-            vec.swap(start, i);
-            permutate(vec, start + 1, result);
-            vec.swap(start, i);
-        }
-    }
 }
 
 #[derive(Clone)]
@@ -443,6 +438,14 @@ impl<'a> Node<'a> {
         }
     }
 
+    pub fn set_round_index(
+        mut self,
+        index: i32,
+    ) -> Self {
+        self.round_index = index;
+        self
+    }
+
     pub fn pre_evaluate(
         &self,
         assignments: &Vec<(i32, i32)>,
@@ -505,12 +508,13 @@ impl<'a> Node<'a> {
         q1: i32,
         q2: i32,
         mut options: Vec<(i32, i32)>,
-        upperbound: i128,
+        best: i128,
         num_rounds: i32,
         is_minimizing: bool,
     ) -> Vec<Vec<(i32, i32)>> {
         let mut result = Vec::new();
-        if !self.check_global(num_rounds - self.round_index - 1) {
+
+        if is_minimizing && !self.check_global(num_rounds - self.round_index - 1) {
             return result;
         }
 
@@ -520,8 +524,9 @@ impl<'a> Node<'a> {
         let num_checks_q2 = q2 - 2;
         let stop_round_q2 = self.round_index - num_checks_q2;
 
-        permutate(&mut options, 0, &mut result);
+        // permutate(&mut options, 0, &mut result);
         // println!("result.len() = {}", result.len());
+        result = options.iter().permutations(options.len()).map(|p| p.into_iter().cloned().collect()).collect();
         let mut counter = 0;
 
         result.into_iter()
@@ -534,18 +539,22 @@ impl<'a> Node<'a> {
                 let is_q1 = self.check_q1(stop_round_q1, perm);
                 if !is_q1 {
                     counter += 1;
-                    // println!("Q1! Counter: {}", counter);
+                    // if !is_minimizing {
+                    //     println!("Q1! Counter: {}", counter);
+                    // }
                     return false;
                 }
 
                 let is_q2 = self.check_q2(stop_round_q2, perm);
                 if !is_q2 {
                     counter += 1;
-                    // println!("Q2! Counter: {}", counter);
+                    // if !is_minimizing {
+                    //     println!("Q2! Counter: {}", counter);
+                    // }
                     return false;
                 }
 
-                let is_pre_evaluated = self.pre_evaluate(perm, upperbound);
+                let is_pre_evaluated = self.pre_evaluate(perm, best);
 
                 if is_minimizing {
                     if !is_pre_evaluated {
@@ -579,10 +588,10 @@ impl<'a> Node<'a> {
     ) -> bool {
         let mut result = true;
 
-        if self.round_index != 1 && stop_round < self.round_index {
+        if stop_round < self.round_index {
             if let Some(parent) = &self.parent {
                 result = parent.check_q1(stop_round, perm);
-            } else {};
+            };
         }
         
         let is_visited = self.is_visited(perm);
@@ -596,7 +605,7 @@ impl<'a> Node<'a> {
     ) -> bool {
         let mut result = true;
         
-        if self.round_index != 1 && stop_round < self.round_index {
+        if stop_round < self.round_index {
             if let Some(parent) = &self.parent {
                 result = parent.check_q2(stop_round, assignments);
             }
