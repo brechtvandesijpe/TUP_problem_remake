@@ -183,12 +183,12 @@ fn calculate_lowerbound(
     model: Model,
 ) {
     let mut rounds_lbs = rounds_lbs.lock().unwrap().clone();
-    for k in 0..(max_rounds-1) {
+    for k in 1..max_rounds {
         let r: i32 = max_rounds - 1 - k;
 
         let mut source = Node::new(
             None,
-            model.get_round_ints(r).clone(),
+            model.get_round_ints(r + 1).clone(),
             &dist,
         );
 
@@ -207,8 +207,9 @@ fn calculate_lowerbound(
             let val = current_state.score;
             if val >= best {
                 if (current_state.round_index as usize) == (r + k) as usize {
+                    println!("Update on {}", r + k);
                     best = val;
-                } else  {
+                } else {
                     // ADD ALL FEASIBLE CHILDREN TO EXPLORE
                     let options = model.get_round_ints(current_state.round_index + 1);
                     let children = current_state.generate_children(q1, q2, options, best, max_rounds, false);
@@ -231,6 +232,8 @@ fn calculate_lowerbound(
         // println!("best = {}, k = {}, r = {}", best, k, r);
         for r1 in (0..=r).rev() {
             for r2 in (r + k)..max_rounds {
+                // println!("r1 = {}", r1);
+                // println!("r2 = {}", r2);
                 let val_1: i128 = rounds_lbs[r1 as usize][r2 as usize].borrow_mut().clone();
                 let val_2: i128 = rounds_lbs[r1 as usize][r as usize].borrow().clone() + best;
                 let val_3: i128 = rounds_lbs[(r + k) as usize][r2 as usize].borrow_mut().clone();
@@ -242,7 +245,7 @@ fn calculate_lowerbound(
                 *rounds_lbs[r1 as usize][r2 as usize].borrow_mut() = best_val;
             }
         }
-        println!("r + k = {}", r + k);
+        // println!("r + k = {}, r = {}, k = {}", r + k, r, k);
         pretty_print(&rounds_lbs);
 
         // println!("{:?}", rounds_lbs);
