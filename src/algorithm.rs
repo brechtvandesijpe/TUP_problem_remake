@@ -195,6 +195,8 @@ fn calculate_lowerbound(
         source = source.set_round_index(r);
 
         let mut best: i128 = std::i128::MAX;
+        let mut best_solution: Option<Node> = None;
+
         let mut nodes: Vec<Node> = Vec::new();
         nodes.push(source);
 
@@ -208,6 +210,7 @@ fn calculate_lowerbound(
             if val < best {
                 if (current_state.round_index as usize) == (r + k + 1) as usize {
                     best = val;
+                    best_solution = Some(current_state.clone());
                 } else {
                     // ADD ALL FEASIBLE CHILDREN TO EXPLORE
                     let options = model.get_round_ints(current_state.round_index + 1);
@@ -228,7 +231,7 @@ fn calculate_lowerbound(
             }
         }
 
-        println!("best value = {}", best);
+        println!("{:?}", best_solution.unwrap());
 
         // println!("best = {}, k = {}, r = {}", best, k, r);
         for r1 in (0..=r).rev() {
@@ -561,7 +564,6 @@ impl<'a> Node<'a> {
                 }
 
                 let is_pre_evaluated = self.pre_evaluate(perm, best);
-
                 if !is_pre_evaluated {
                     counter += 1;
                     // println!("EVAL! Counter: {}", counter);
