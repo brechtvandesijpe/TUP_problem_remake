@@ -192,7 +192,7 @@ fn calculate_lowerbound(
             &dist,
         );
 
-        source = source.set_round_index(r);
+        source = source.set_round_index(r + 1);
 
         let mut best: i128 = std::i128::MAX;
         let mut best_solution: Option<Node> = None;
@@ -540,33 +540,19 @@ impl<'a> Node<'a> {
 
         result.into_iter()
             .filter(|perm| {
-                // let is_global = self.check_global_mutations(num_rounds - self.round_index, perm);
-                // if !is_global {
-                //     return false;
-                // }
-
                 let is_q1 = self.check_q1(stop_round_q1, perm);
                 if !is_q1 {
-                    counter += 1;
-                    // if !is_minimizing {
-                    //     println!("Q1! Counter: {}", counter);
-                    // }
                     return false;
                 }
-
+    
                 let is_q2 = self.check_q2(stop_round_q2, perm);
                 if !is_q2 {
-                    counter += 1;
-                    // if !is_minimizing {
-                    //     println!("Q2! Counter: {}", counter);
-                    // }
                     return false;
                 }
 
                 let is_pre_evaluated = self.pre_evaluate(perm, best);
                 if !is_pre_evaluated {
                     counter += 1;
-                    // println!("EVAL! Counter: {}", counter);
                     return false;
                 }
 
@@ -584,7 +570,7 @@ impl<'a> Node<'a> {
     pub fn check_q1(
         &self,
         stop_round: i32,
-        perm: &Vec<(i32, i32)>
+        perm: &Vec<(i32, i32)>,
     ) -> bool {
         let mut result = true;
 
