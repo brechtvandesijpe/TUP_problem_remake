@@ -168,6 +168,7 @@ impl Model {
 fn pretty_print(
     matrix: &Vec<Vec<i128>>,
 ) {
+    println!("--");
     for row in matrix {
         println!("{:?}", row);
     }
@@ -182,7 +183,7 @@ fn calculate_lowerbound(
     model: Model,
 ) {
     let mut rounds_lbs = rounds_lbs.lock().unwrap().clone();
-    for k in 0..max_rounds {
+    for k in 0..(max_rounds-1) {
         let r: i32 = max_rounds - 1 - k;
 
         let mut source = Node::new(
@@ -205,7 +206,9 @@ fn calculate_lowerbound(
             // EVALUATE
             let val = current_state.score;
             if val >= best {
-                if (current_state.round_index as usize) < (r + k) as usize {
+                if (current_state.round_index as usize) == (r + k) as usize {
+                    best = val;
+                } else  {
                     // ADD ALL FEASIBLE CHILDREN TO EXPLORE
                     let options = model.get_round_ints(current_state.round_index + 1);
                     let children = current_state.generate_children(q1, q2, options, best, max_rounds, false);
@@ -221,8 +224,6 @@ fn calculate_lowerbound(
                             nodes.push(new_node);
                         }
                     }
-                } else {
-                    best = val;
                 }
             }
         }
@@ -241,6 +242,7 @@ fn calculate_lowerbound(
                 *rounds_lbs[r1 as usize][r2 as usize].borrow_mut() = best_val;
             }
         }
+        println!("r + k = {}", r + k);
         pretty_print(&rounds_lbs);
 
         // println!("{:?}", rounds_lbs);
