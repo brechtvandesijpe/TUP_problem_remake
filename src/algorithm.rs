@@ -182,7 +182,6 @@ fn calculate_lowerbound(
     q2: i32,
     model: Model,
 ) {
-    let mut rounds_lbs = rounds_lbs.lock().unwrap().clone();
     for k in 1..max_rounds {
         let r: i32 = max_rounds - 1 - k;
 
@@ -236,21 +235,16 @@ fn calculate_lowerbound(
         // println!("best = {}, k = {}, r = {}", best, k, r);
         for r1 in (0..=r).rev() {
             for r2 in (r + k)..max_rounds {
-                // println!("r1 = {}", r1);
-                // println!("r2 = {}", r2);
-                let val_1: i128 = rounds_lbs[r1 as usize][r2 as usize].borrow_mut().clone();
-                let val_2: i128 = rounds_lbs[r1 as usize][r as usize].borrow().clone() + best;
-                let val_3: i128 = rounds_lbs[(r + k) as usize][r2 as usize].borrow_mut().clone();
+                let mut data = rounds_lbs.lock().unwrap();
+                let val_1: i128 = data[r1 as usize][r2 as usize].borrow_mut().clone();
+                let val_2: i128 = data[r1 as usize][r as usize].borrow().clone() + best;
+                let val_3: i128 = data[(r + k) as usize][r2 as usize].borrow_mut().clone();
                 let best_val = std::cmp::max(val_1, std::cmp::max(val_2, val_3));
-                // println!("val_1 = {}", val_1);
-                // println!("val_2 = {}", val_2);
-                // println!("val_3 = {}", val_3);
-                // println!("best_val = {}", best_val);
-                *rounds_lbs[r1 as usize][r2 as usize].borrow_mut() = best_val;
+                *data[r1 as usize][r2 as usize].borrow_mut() = best_val;
+                pretty_print(&data);
             }
         }
 
-        pretty_print(&rounds_lbs);
     }
 }
 
@@ -278,7 +272,7 @@ pub fn branch_and_bound(
     nodes.push(source.clone());
 
     // START LWOERBOUND_THREAD
-    let lowerbound:Arc<Mutex<Vec<Vec<i128>>>> = Arc::new(Mutex::new(vec![vec![0; model.num_rounds as usize]; model.num_rounds as usize]));
+    let lowerbound: Arc<Mutex<Vec<Vec<i128>>>> = Arc::new(Mutex::new(vec![vec![0; model.num_rounds as usize]; model.num_rounds as usize]));
     let lowerbound_clone:Arc<Mutex<Vec<Vec<i128>>>> = Arc::clone(&lowerbound);
 
     let dist_clone = Arc::new(data.dist.clone());
@@ -300,6 +294,7 @@ pub fn branch_and_bound(
     );
 
     handle.join().unwrap();
+    pretty_print(&lowerbound.lock().unwrap());
 
     // START BRANCH AND BOUND
     while nodes.len() > 0 {
@@ -309,7 +304,7 @@ pub fn branch_and_bound(
         // EVALUATE
         let val = current_state.score;
         let lb_val = lowerbound.lock().unwrap().clone();
-        if val >= lb_val[(num_rounds - 1) as usize][(current_state.round_index - 1) as usize] && val < upperbound {
+        if val < upperbound {
             if (current_state.round_index as usize) < num_rounds as usize {
                 // ADD ALL FEASIBLE CHILDREN TO EXPLORE
                 let children = current_state.generate_children(q1, q2, model.get_round_ints(current_state.round_index + 1), upperbound, num_rounds, false);
@@ -327,13 +322,9 @@ pub fn branch_and_bound(
                 }
             } else {
                 upperbound = val;
-                println!("lb = {}, ub = {}", lb_val[(num_rounds - 1) as usize][(current_state.round_index - 1) as usize], upperbound);
+                println!("lb = {}, ub = {}", lb_val[(current_state.round_index - 1) as usize][(num_rounds - 1) as usize], upperbound);
                 best_solution = Some(current_state.clone());
             }
-        }
-
-        if lb_val[(current_state.round_index - 1) as usize][(num_rounds - 1) as usize] == upperbound {
-            break;
         }
     }
     
