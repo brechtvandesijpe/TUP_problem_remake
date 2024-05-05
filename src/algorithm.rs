@@ -213,7 +213,7 @@ fn calculate_lowerbound(
                 } else {
                     // ADD ALL FEASIBLE CHILDREN TO EXPLORE
                     let options = model.get_round_ints(current_state.round_index + 1);
-                    let children = current_state.generate_children(q1, q2, options, best, max_rounds, true);
+                    let children = current_state.generate_children(q1, q2, options, best, max_rounds, true, &rounds_lbs.lock().unwrap());
                     
                     // CREATE AND ADD ALL CHILDREN
                     if !children.is_empty() {
@@ -230,7 +230,7 @@ fn calculate_lowerbound(
             }
         }
 
-        println!("{:?}", best_solution.unwrap());
+        // println!("{:?}", best_solution.unwrap());
 
         // println!("best = {}, k = {}, r = {}", best, k, r);
         for r1 in (0..=r).rev() {
@@ -241,7 +241,7 @@ fn calculate_lowerbound(
                 let val_3: i128 = data[(r + k) as usize][r2 as usize].borrow_mut().clone();
                 let best_val = std::cmp::max(val_1, std::cmp::max(val_2, val_3));
                 *data[r1 as usize][r2 as usize].borrow_mut() = best_val;
-                pretty_print(&data);
+                // pretty_print(&data);
             }
         }
 
@@ -307,7 +307,7 @@ pub fn branch_and_bound(
         if val < upperbound {
             if (current_state.round_index as usize) < num_rounds as usize {
                 // ADD ALL FEASIBLE CHILDREN TO EXPLORE
-                let children = current_state.generate_children(q1, q2, model.get_round_ints(current_state.round_index + 1), upperbound, num_rounds, false);
+                let children = current_state.generate_children(q1, q2, model.get_round_ints(current_state.round_index + 1), upperbound, num_rounds, false, &lb_val);
 
                 // CREATE AND ADD ALL CHILDREN
                 if !children.is_empty() {
@@ -322,7 +322,6 @@ pub fn branch_and_bound(
                 }
             } else {
                 upperbound = val;
-                println!("lb = {}, ub = {}", lb_val[(current_state.round_index - 1) as usize][(num_rounds - 1) as usize], upperbound);
                 best_solution = Some(current_state.clone());
             }
         }
@@ -450,6 +449,8 @@ impl<'a> Node<'a> {
         &self,
         assignments: &Vec<(i32, i32)>,
         upperbound: i128,
+        lb_val: &Vec<Vec<i128>>,
+        max_rounds: i32,
     ) -> bool {
         let previous_locations: Vec<i32> = self.get_current_locations();
         let mut score: i128 = self.score;
@@ -460,7 +461,8 @@ impl<'a> Node<'a> {
             score += self.dist[from as usize][to as usize];
         }
 
-        score < upperbound
+        // score < upperbound
+        !(lb_val[(self.round_index - 1) as usize][(max_rounds - 1) as usize] + score > upperbound)
     }
 
     pub fn check_global(
@@ -511,6 +513,7 @@ impl<'a> Node<'a> {
         best: i128,
         num_rounds: i32,
         is_lowerbound: bool,
+        lb_val: &Vec<Vec<i128>>,
     ) -> Vec<Vec<(i32, i32)>> {
         let mut result = Vec::new();
 
@@ -541,7 +544,7 @@ impl<'a> Node<'a> {
                     return false;
                 }
 
-                let is_pre_evaluated = self.pre_evaluate(perm, best);
+                let is_pre_evaluated = self.pre_evaluate(perm, best, &lb_val, num_rounds);
                 if !is_pre_evaluated {
                     counter += 1;
                     return false;
