@@ -8,6 +8,160 @@ mod tests {
     }
 
     #[test]
+    pub fn is_previous() {
+        let dist = vec![
+            vec![0, 1, 1, 1, 1, 1, 1, 1],
+            vec![1, 0, 1, 1, 1, 1, 1, 1],
+            vec![1, 1, 0, 1, 1, 1, 1, 1],
+            vec![1, 1, 1, 0, 1, 1, 1, 1],
+            vec![1, 1, 1, 1, 0, 1, 1, 1],
+            vec![1, 1, 1, 1, 1, 0, 1, 1],
+            vec![1, 1, 1, 1, 1, 1, 0, 1],
+            vec![1, 1, 1, 1, 1, 1, 1, 0],
+        ];
+
+        let round_one = Node::new(
+            None,
+            vec![(2, 4), (3, 6), (1, 7), (5, 8)],
+            &dist,
+        );
+
+        let round_two = Node::new(
+            Some(Box::new(round_one.clone())),
+            vec![(5, 7), (4, 1), (6, 8), (3, 2)],
+            &dist,
+        );
+
+        assert!(!round_one.is_previous(&vec![(12, 12), (12, 12), (12, 12), (12, 12)]));
+
+        assert!(!round_one.is_previous(&vec![(12, 4), (12, 12), (12, 12), (12, 12)]));
+        assert!(!round_one.is_previous(&vec![(2, 12), (12, 12), (12, 12), (12, 12)]));
+        assert!(!round_one.is_previous(&vec![(12, 12), (12, 6), (12, 12), (12, 12)]));
+        assert!(!round_one.is_previous(&vec![(12, 12), (3, 12), (12, 12), (12, 12)]));
+        assert!(!round_one.is_previous(&vec![(12, 12), (12, 12), (12, 7), (12, 12)]));
+        assert!(!round_one.is_previous(&vec![(12, 12), (12, 12), (1, 12), (12, 12)]));
+        assert!(!round_one.is_previous(&vec![(12, 12), (12, 12), (12, 12), (12, 8)]));
+        assert!(!round_one.is_previous(&vec![(12, 12), (12, 12), (12, 12), (5, 12)]));
+
+        assert!(round_one.is_previous(&vec![(2, 4), (12, 12), (12, 12), (12, 12)]));
+        assert!(round_one.is_previous(&vec![(12, 12), (3, 6), (12, 12), (12, 12)]));
+        assert!(round_one.is_previous(&vec![(12, 12), (12, 12), (1, 7), (12, 12)]));
+        assert!(round_one.is_previous(&vec![(12, 12), (12, 12), (12, 12), (5, 8)]));
+
+        assert!(!round_two.is_previous(&vec![(12, 12), (12, 12), (12, 12), (12, 12)]));
+
+        assert!(!round_two.is_previous(&vec![(12, 7), (12, 12), (12, 12), (12, 12)]));
+        assert!(!round_two.is_previous(&vec![(5, 12), (12, 12), (12, 12), (12, 12)]));
+        assert!(!round_two.is_previous(&vec![(12, 12), (12, 1), (12, 12), (12, 12)]));
+        assert!(!round_two.is_previous(&vec![(12, 12), (4, 12), (12, 12), (12, 12)]));
+        assert!(!round_two.is_previous(&vec![(12, 12), (12, 12), (12, 8), (12, 12)]));
+        assert!(!round_two.is_previous(&vec![(12, 12), (12, 12), (6, 12), (12, 12)]));
+        assert!(!round_two.is_previous(&vec![(12, 12), (12, 12), (12, 12), (12, 2)]));
+        assert!(!round_two.is_previous(&vec![(12, 12), (12, 12), (12, 12), (3, 12)]));
+
+        assert!(round_two.is_previous(&vec![(5, 7), (12, 12), (12, 12), (12, 12)]));
+        assert!(round_two.is_previous(&vec![(12, 12), (4, 1), (12, 12), (12, 12)]));
+        assert!(round_two.is_previous(&vec![(12, 12), (12, 12), (6, 8), (12, 12)]));
+        assert!(round_two.is_previous(&vec![(12, 12), (12, 12), (12, 12), (3, 2)]));
+    }
+
+    #[test]
+    pub fn previous_constraint() {
+        let dist = vec![
+            vec![0, 1, 1, 1, 1, 1, 1, 1],
+            vec![1, 0, 1, 1, 1, 1, 1, 1],
+            vec![1, 1, 0, 1, 1, 1, 1, 1],
+            vec![1, 1, 1, 0, 1, 1, 1, 1],
+            vec![1, 1, 1, 1, 0, 1, 1, 1],
+            vec![1, 1, 1, 1, 1, 0, 1, 1],
+            vec![1, 1, 1, 1, 1, 1, 0, 1],
+            vec![1, 1, 1, 1, 1, 1, 1, 0],
+        ];
+
+        let round_one = Node::new(
+            None,
+            vec![(1, 5), (4, 8), (6, 2), (7, 3)],
+            &dist,
+        );
+
+        let round_two = Node::new(
+            Some(Box::new(round_one.clone())),
+            vec![(2, 8), (5, 3), (4, 7), (1, 6)],
+            &dist,
+        );
+
+        let round_three = Node::new(
+            Some(Box::new(round_two.clone())),
+            vec![(5, 6), (1, 4), (3, 8), (2, 7)],
+            &dist,
+        );
+
+        let round_four = Node::new(
+            Some(Box::new(round_three.clone())),
+            vec![(3, 7), (8, 2), (5, 4), (6, 1)],
+            &dist,
+        );
+
+        assert!(!round_one.check_previous(&vec![(1, 5), (12, 12), (12, 12), (12, 12)]));
+        assert!(!round_one.check_previous(&vec![(12, 12), (4, 8), (12, 12), (12, 12)]));
+        assert!(!round_one.check_previous(&vec![(12, 12), (12, 12), (6, 2), (12, 12)]));
+        assert!(!round_one.check_previous(&vec![(12, 12), (12, 12), (12, 12), (7, 3)]));
+        assert!(round_one.check_previous(&vec![(2, 8), (5, 3), (4, 7), (1, 6)]));
+        assert!(round_one.check_previous(&vec![(5, 6), (1, 4), (3, 8), (2, 7)]));
+        assert!(round_one.check_previous(&vec![(3, 7), (8, 2), (5, 4), (6, 1)]));
+
+        assert!(!round_two.check_previous(&vec![(1, 5), (12, 12), (12, 12), (12, 12)]));
+        assert!(!round_two.check_previous(&vec![(12, 12), (4, 8), (12, 12), (12, 12)]));
+        assert!(!round_two.check_previous(&vec![(12, 12), (12, 12), (6, 2), (12, 12)]));
+        assert!(!round_two.check_previous(&vec![(1, 5), (4, 8), (6, 2), (7, 3)]));
+        assert!(!round_two.check_previous(&vec![(2, 8), (12, 12), (12, 12), (12, 12)]));
+        assert!(!round_two.check_previous(&vec![(12, 12), (5, 3), (12, 12), (12, 12)]));
+        assert!(!round_two.check_previous(&vec![(12, 12), (12, 12), (4, 7), (12, 12)]));
+        assert!(!round_two.check_previous(&vec![(12, 12), (12, 12), (12, 12), (1, 6)]));
+        assert!(!round_two.check_previous(&vec![(2, 8), (5, 3), (4, 7), (1, 6)]));
+        assert!(round_two.check_previous(&vec![(5, 6), (1, 4), (3, 8), (2, 7)]));
+        assert!(round_two.check_previous(&vec![(3, 7), (8, 2), (5, 4), (6, 1)]));
+        
+        assert!(!round_three.check_previous(&vec![(2, 8), (12, 12), (12, 12), (12, 12)]));
+        assert!(!round_three.check_previous(&vec![(12, 12), (5, 3), (12, 12), (12, 12)]));
+        assert!(!round_three.check_previous(&vec![(12, 12), (12, 12), (4, 7), (12, 12)]));
+        assert!(!round_three.check_previous(&vec![(12, 12), (12, 12), (12, 12), (1, 6)]));
+        assert!(!round_three.check_previous(&vec![(1, 5), (4, 8), (6, 2), (7, 3)]));
+        assert!(!round_three.check_previous(&vec![(2, 8), (12, 12), (12, 12), (12, 12)]));
+        assert!(!round_three.check_previous(&vec![(12, 12), (5, 3), (12, 12), (12, 12)]));
+        assert!(!round_three.check_previous(&vec![(12, 12), (12, 12), (4, 7), (12, 12)]));
+        assert!(!round_three.check_previous(&vec![(12, 12), (12, 12), (12, 12), (1, 6)]));
+        assert!(!round_three.check_previous(&vec![(2, 8), (5, 3), (4, 7), (1, 6)]));
+        assert!(!round_three.check_previous(&vec![(5, 6), (12, 12), (12, 12), (12, 12)]));
+        assert!(!round_three.check_previous(&vec![(12, 12), (1, 4), (12, 12), (12, 12)]));
+        assert!(!round_three.check_previous(&vec![(12, 12), (12, 12), (3, 8), (12, 12)]));
+        assert!(!round_three.check_previous(&vec![(12, 12), (12, 12), (12, 12), (2, 7)]));
+        assert!(!round_three.check_previous(&vec![(5, 6), (1, 4), (3, 8), (2, 7)]));
+        assert!(round_three.check_previous(&vec![(3, 7), (8, 2), (5, 4), (6, 1)]));
+        
+        assert!(!round_four.check_previous(&vec![(2, 8), (12, 12), (12, 12), (12, 12)]));
+        assert!(!round_four.check_previous(&vec![(12, 12), (5, 3), (12, 12), (12, 12)]));
+        assert!(!round_four.check_previous(&vec![(12, 12), (12, 12), (4, 7), (12, 12)]));
+        assert!(!round_four.check_previous(&vec![(12, 12), (12, 12), (12, 12), (1, 6)]));
+        assert!(!round_four.check_previous(&vec![(1, 5), (4, 8), (6, 2), (7, 3)]));
+        assert!(!round_four.check_previous(&vec![(2, 8), (12, 12), (12, 12), (12, 12)]));
+        assert!(!round_four.check_previous(&vec![(12, 12), (5, 3), (12, 12), (12, 12)]));
+        assert!(!round_four.check_previous(&vec![(12, 12), (12, 12), (4, 7), (12, 12)]));
+        assert!(!round_four.check_previous(&vec![(12, 12), (12, 12), (12, 12), (1, 6)]));
+        assert!(!round_four.check_previous(&vec![(2, 8), (5, 3), (4, 7), (1, 6)]));
+        assert!(!round_four.check_previous(&vec![(5, 6), (12, 12), (12, 12), (12, 12)]));
+        assert!(!round_four.check_previous(&vec![(12, 12), (1, 4), (12, 12), (12, 12)]));
+        assert!(!round_four.check_previous(&vec![(12, 12), (12, 12), (3, 8), (12, 12)]));
+        assert!(!round_four.check_previous(&vec![(12, 12), (12, 12), (12, 12), (2, 7)]));
+        assert!(!round_four.check_previous(&vec![(5, 6), (1, 4), (3, 8), (2, 7)]));
+        assert!(!round_four.check_previous(&vec![(3, 7), (12, 12), (12, 12), (12, 12)]));
+        assert!(!round_four.check_previous(&vec![(12, 12), (8, 2), (12, 12), (12, 12)]));
+        assert!(!round_four.check_previous(&vec![(12, 12), (12, 12), (5, 4), (12, 12)]));
+        assert!(!round_four.check_previous(&vec![(12, 12), (12, 12), (12, 12), (6, 1)]));
+        assert!(!round_four.check_previous(&vec![(3, 7), (8, 2), (5, 4), (6, 1)]));
+    }
+
+    #[test]
     pub fn is_visited() {
         let dist = vec![
             vec![0, 1, 1, 1, 1, 1, 1, 1],

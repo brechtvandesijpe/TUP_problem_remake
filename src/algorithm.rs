@@ -8,6 +8,8 @@ use std::thread;
 use std::borrow::Borrow;
 use std::borrow::BorrowMut;
 use itertools::Itertools;
+use std::io::{BufWriter, Write};
+use std::collections::HashSet;
 
 #[derive(Debug)]
 pub struct Data {
@@ -585,6 +587,16 @@ impl<'a> Node<'a> {
         result
     }
 
+    fn write_to_file(result: &Vec<Vec<(i32, i32)>>, filename: &str) -> std::io::Result<()> {
+        let file = File::create(filename)?;
+        let mut writer = BufWriter::new(file);
+    
+        for line in result {
+            writeln!(writer, "{:?}", line)?;
+        }
+        Ok(())
+    }
+
     pub fn generate_children_lowerbound(
         &self,
         q1: i32,
@@ -594,8 +606,6 @@ impl<'a> Node<'a> {
         lb_val: &Vec<Vec<i128>>,
         max_sub_rounds: i32,
     ) -> Vec<Vec<(i32, i32)>> {
-        let mut result = Vec::new();
-
         let num_checks_q1 = q1 - 2;
         let stop_round_q1 = self.round_index - num_checks_q1;
 
@@ -604,15 +614,22 @@ impl<'a> Node<'a> {
 
         // permutate(&mut options, 0, &mut result);
         // println!("result.len() = {}", result.len());
-        result = options.iter().permutations(options.len()).map(|p| p.into_iter().cloned().collect()).collect();
+        let permutations: HashSet<Vec<_>> = options.iter().permutations(options.len())
+            .map(|p| p.into_iter().cloned().collect())
+            .collect();
+        let mut result: Vec<_> = permutations.into_iter().collect();
+        // let _ = Self::write_to_file(&result, "result.txt");
+        // let old_len = result.len();
+        // println!("old len = {}", old_len);
+        // result = result.into_iter()
+        //     .filter(|perm| {
+        //         self.check_previous(perm)
+        //     })
+        //     .collect::<Vec<_>>();
         let old_len = result.len();
+        // println!("old len = {}", old_len);
         result = result.into_iter()
             .filter(|perm| {
-                let is_previous = self.check_previous(perm);
-                if !is_previous {
-                    return false;
-                }
-
                 let is_q1 = self.check_q1(stop_round_q1, perm);
                 if !is_q1 {
                     return false;
@@ -631,9 +648,9 @@ impl<'a> Node<'a> {
                 true
             })
             .collect::<Vec<_>>();
-        // if old_len != result.len() {
-        //     println!("num new = {}", result.len());
-        // }
+        if old_len != result.len() {
+            println!("round = {}, num new = {}", self.round_index, result.len());
+        }
         result
     }
 
