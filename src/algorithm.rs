@@ -193,7 +193,7 @@ fn calculate_lowerbound(
 
         source = source.set_round_index(r + 1);
 
-        let mut upperbound: i128 = std::i128::MAX;
+        let mut upperbound: i128 = 999999;
         let mut best_solution: Option<Node> = None;
 
         let mut nodes: Vec<Node> = Vec::new();
@@ -258,7 +258,7 @@ pub fn branch_and_bound(
 
     let initial = model.get_round_ints(1);
 
-    let mut upperbound: i128 = std::i128::MAX;
+    let mut upperbound: i128 = 999999;
     let mut best_solution: Option<Node> = None;
 
     let source = Node::new(
@@ -323,8 +323,9 @@ pub fn branch_and_bound(
                 }
             } else {
                 upperbound = val;
-                println!("Contesting lock");
-                println!("lowerbound = {}, upperbound = {}", &lowerbound.lock().unwrap()[0][(num_rounds - 1) as usize], upperbound);
+                let lb: &i128 = &lowerbound.lock().unwrap()[0][(num_rounds - 1) as usize];
+                let gap = (upperbound as f64 - *lb as f64) / upperbound as f64;
+                println!("lowerbound = {}, upperbound = {}, gap = {}", lb, upperbound, gap);
                 best_solution = Some(current_state.clone());
             }
         }
