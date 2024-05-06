@@ -221,7 +221,7 @@ fn calculate_lowerbound(
                 } else {
                     // ADD ALL FEASIBLE CHILDREN TO EXPLORE
                     let options = model.get_round_ints(current_state.round_index + 1);
-                    let children = current_state.generate_children_lowerbound(q1, q2, options, upperbound, max_rounds, &rounds_lbs.lock().unwrap());
+                    let children = current_state.generate_children_lowerbound(q1, q2, options, upperbound, max_rounds, &rounds_lbs.lock().unwrap(), r + k + 1);
                     
                     // CREATE AND ADD ALL CHILDREN
                     if !children.is_empty() {
@@ -249,7 +249,7 @@ fn calculate_lowerbound(
                 let val_3: i128 = data[(r + k) as usize][r2 as usize].borrow_mut().clone();
                 let best_val = std::cmp::max(val_1, std::cmp::max(val_2, val_3));
                 *data[r1 as usize][r2 as usize].borrow_mut() = best_val;
-                pretty_print(&data);
+                // pretty_print(&data);
             }
         }
 
@@ -459,7 +459,7 @@ impl<'a> Node<'a> {
         assignments: &Vec<(i32, i32)>,
         upperbound: i128,
         lb_val: &Vec<Vec<i128>>,
-        max_rounds: i32,
+        max_sub_rounds: i32,
     ) -> bool {
         let previous_locations: Vec<i32> = self.get_current_locations();
         let mut score: i128 = self.score;
@@ -470,13 +470,8 @@ impl<'a> Node<'a> {
             score += self.dist[from as usize][to as usize];
         }
 
-        // if self.round_index == max_rounds {
-        //     return true;
-        // }
-
-        // let lowerbound = lb_val[self.round_index as usize][(max_rounds - 1) as usize];
-        // lowerbound + score <= upperbound
-        score < upperbound
+        let lowerbound = lb_val[self.round_index as usize][(max_sub_rounds - 1) as usize];
+        lowerbound + score > upperbound
     }
 
     pub fn pre_evaluate_lowerbound(
@@ -484,7 +479,7 @@ impl<'a> Node<'a> {
         assignments: &Vec<(i32, i32)>,
         upperbound: i128,
         lb_val: &Vec<Vec<i128>>,
-        max_rounds: i32,
+        max_sub_rounds: i32,
     ) -> bool {
         let previous_locations: Vec<i32> = self.get_current_locations();
         let mut score: i128 = self.score;
@@ -494,16 +489,9 @@ impl<'a> Node<'a> {
             let to: i32 = assignments[i].0 - 1;
             score += self.dist[from as usize][to as usize];
         }
-        
-        // if self.round_index == max_rounds {
-        //     return true;
-        // }
 
-        // let lowerbound = lb_val[self.round_index as usize][(max_rounds - 1) as usize];
-        // println!("lowerbound = {}, score = {}, upperbound = {}", lowerbound, score, upperbound);
-        // lowerbound + score <= upperbound
-
-        score < upperbound
+        let lowerbound = lb_val[self.round_index as usize][(max_sub_rounds - 1) as usize];
+        lowerbound + score > upperbound
     }
 
     pub fn check_global(
@@ -583,7 +571,7 @@ impl<'a> Node<'a> {
                 }
 
                 let is_pre_evaluated = self.pre_evaluate(perm, best, &lb_val, num_rounds);
-                if !is_pre_evaluated {
+                if is_pre_evaluated {
                     return false;
                 }
 
@@ -600,6 +588,7 @@ impl<'a> Node<'a> {
         best: i128,
         num_rounds: i32,
         lb_val: &Vec<Vec<i128>>,
+        max_sub_rounds: i32,
     ) -> Vec<Vec<(i32, i32)>> {
         let mut result = Vec::new();
 
@@ -626,8 +615,8 @@ impl<'a> Node<'a> {
                     return false;
                 }
 
-                let is_pre_evaluated = self.pre_evaluate_lowerbound(perm, best, &lb_val, num_rounds);
-                if !is_pre_evaluated {
+                let is_pre_evaluated = self.pre_evaluate_lowerbound(perm, best, &lb_val, max_sub_rounds);
+                if is_pre_evaluated {
                     return false;
                 }
 
