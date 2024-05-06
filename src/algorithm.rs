@@ -184,6 +184,7 @@ fn calculate_lowerbound(
 ) {
     for k in 1..max_rounds {
         let r: i32 = max_rounds - 1 - k;
+        println!("LB calculation of start = {}, end = {}", r+1, r+k+1);
 
         let mut source = Node::new(
             None,
