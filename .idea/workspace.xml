@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="3b2752fb-6b90-431b-a6fb-630887372147" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.vscode/launch.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/firedbg/version.toml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/readme.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/bounds/8_4_2_lb.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/output/res.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/umps10.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/umps10A.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/umps10B.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/umps10C.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/umps12.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/umps14.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/umps14A.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/umps14B.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/umps14C.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/umps16.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/umps16A.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/umps16B.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/umps16C.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/umps18.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/umps20.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/umps22.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/umps24.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/umps26.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/umps28.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/umps30.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/umps32.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/umps4.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/umps8.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/umps8A.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/umps8B.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/umps8C.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/solution_umps8.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/solution_umps8A.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/solution_umps8C.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/algorithm.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/data.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/model.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/tests.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/validator.py" beforeDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectId" id="2g65xhxkqvhRzsr4Guh335d5ULQ" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.go.formatter.settings.were.checked": "true",
+    "RunOnceActivity.go.migrated.go.modules.settings": "true",
+    "WebServerToolWindowFactoryState": "false",
+    "aspect.path.notification.shown": "true",
+    "git-widget-placeholder": "lightweight__java",
+    "go.import.settings.migrated": "true",
+    "jdk.selected.JAVA_MODULE": "openjdk-21",
+    "last_opened_file_path": "C:/ELICT4/Geavanceerde_AI/Opdracht/TUP_problem_remake",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\ELICT4\Geavanceerde_AI\Opdracht\TUP_problem_remake" />
+    </key>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="3b2752fb-6b90-431b-a6fb-630887372147" name="Changes" comment="" />
+      <created>1715005435604</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1715005435604</updated>
+      <workItem from="1715005436459" duration="310000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="VgoProject">
+    <settings-migrated>true</settings-migrated>
+  </component>
+</project>
