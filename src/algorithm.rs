@@ -215,7 +215,7 @@ fn calculate_lowerbound(
                 } else {
                     // ADD ALL FEASIBLE CHILDREN TO EXPLORE
                     let options = model.get_round_ints(current_state.round_index + 1);
-                    let children = current_state.generate_children_lowerbound(q1, q2, options, upperbound, max_rounds, &rounds_lbs.lock().unwrap(), r + k + 1);
+                    let children = current_state.generate_children_lowerbound(q1, q2, options, upperbound, &rounds_lbs.lock().unwrap(), r + k + 1);
                     
                     // CREATE AND ADD ALL CHILDREN
                     if !children.is_empty() {
@@ -242,7 +242,7 @@ fn calculate_lowerbound(
                 let val_3: i128 = data[(r + k) as usize][r2 as usize].borrow_mut().clone();
                 let best_val = std::cmp::max(val_1, std::cmp::max(val_2, val_3));
                 *data[r1 as usize][r2 as usize].borrow_mut() = best_val;
-                // pretty_print(&data);
+                pretty_print(&data);
             }
         }
 
@@ -294,8 +294,8 @@ pub fn branch_and_bound(
         }
     );
 
-    // handle.join().unwrap();
-    // pretty_print(&lowerbound.lock().unwrap());
+    handle.join().unwrap();
+    pretty_print(&lowerbound.lock().unwrap());
 
     // START BRANCH AND BOUND
     while nodes.len() > 0 {
@@ -326,7 +326,7 @@ pub fn branch_and_bound(
                 upperbound = val;
                 let lb: &i128 = &lowerbound.lock().unwrap()[0][(num_rounds - 1) as usize];
                 let gap = (upperbound as f64 - *lb as f64) / upperbound as f64;
-                println!("lowerbound = {}, upperbound = {}, gap = {}", lb, upperbound, gap);
+                // println!("lowerbound = {}, upperbound = {}, gap = {}", lb, upperbound, gap);
                 best_solution = Some(current_state.clone());
             }
         }
@@ -467,6 +467,7 @@ impl<'a> Node<'a> {
         }
 
         let lowerbound = lb_val[self.round_index as usize][(max_sub_rounds - 1) as usize];
+        // println!("parent_index = {}, my_index = {}, max = {}, lowerbound = {}", self.round_index, self.round_index + 1, max_sub_rounds - 1, lowerbound);
         lowerbound + score > upperbound
     }
 
@@ -487,6 +488,7 @@ impl<'a> Node<'a> {
         }
 
         let lowerbound = lb_val[self.round_index as usize][(max_sub_rounds - 1) as usize];
+        // println!("parent_index = {}, my_index = {}, max = {}, lowerbound = {}", self.round_index, self.round_index + 1, max_sub_rounds - 1, lowerbound);
         lowerbound + score > upperbound
     }
 
@@ -554,8 +556,13 @@ impl<'a> Node<'a> {
         // permutate(&mut options, 0, &mut result);
         // println!("result.len() = {}", result.len());
         result = options.iter().permutations(options.len()).map(|p| p.into_iter().cloned().collect()).collect();
-        result.into_iter()
+        result = result.into_iter()
             .filter(|perm| {
+                let is_previous = self.check_previous(perm);
+                if !is_previous {
+                    return false;
+                }
+
                 let is_q1 = self.check_q1(stop_round_q1, perm);
                 if !is_q1 {
                     return false;
@@ -573,7 +580,9 @@ impl<'a> Node<'a> {
 
                 true
             })
-            .collect::<Vec<_>>()
+            .collect::<Vec<_>>();
+
+        result
     }
 
     pub fn generate_children_lowerbound(
@@ -581,8 +590,7 @@ impl<'a> Node<'a> {
         q1: i32,
         q2: i32,
         options: Vec<(i32, i32)>,
-        best: i128,
-        num_rounds: i32,
+        upperbound: i128,
         lb_val: &Vec<Vec<i128>>,
         max_sub_rounds: i32,
     ) -> Vec<Vec<(i32, i32)>> {
@@ -597,10 +605,14 @@ impl<'a> Node<'a> {
         // permutate(&mut options, 0, &mut result);
         // println!("result.len() = {}", result.len());
         result = options.iter().permutations(options.len()).map(|p| p.into_iter().cloned().collect()).collect();
-        let mut counter = 0;
-
-        result.into_iter()
+        let old_len = result.len();
+        result = result.into_iter()
             .filter(|perm| {
+                let is_previous = self.check_previous(perm);
+                if !is_previous {
+                    return false;
+                }
+
                 let is_q1 = self.check_q1(stop_round_q1, perm);
                 if !is_q1 {
                     return false;
@@ -611,20 +623,37 @@ impl<'a> Node<'a> {
                     return false;
                 }
 
-                let is_pre_evaluated = self.pre_evaluate_lowerbound(perm, best, &lb_val, max_sub_rounds);
+                let is_pre_evaluated = self.pre_evaluate_lowerbound(perm, upperbound, &lb_val, max_sub_rounds);
                 if is_pre_evaluated {
                     return false;
                 }
 
                 true
             })
-            .collect::<Vec<_>>()
+            .collect::<Vec<_>>();
+        // if old_len != result.len() {
+        //     println!("num new = {}", result.len());
+        // }
+        result
     }
 
     pub fn get_current_locations(
         &self,
     ) -> Vec<i32> {
         self.new_assignments.iter().map(|(from, _)| *from).collect()
+    }
+
+    pub fn check_previous(
+        &self,
+        perm: &Vec<(i32, i32)>,
+    ) -> bool {
+        let mut result = true;
+        if let Some(parent) = &self.parent {
+            result = parent.check_previous(perm);
+        };
+        
+        let is_previous = self.is_previous(perm);
+        result && !is_previous
     }
 
     pub fn check_q1(
@@ -659,6 +688,21 @@ impl<'a> Node<'a> {
         
         let is_officiated = self.is_officiated(assignments);
         result && !is_officiated
+    }
+
+    pub fn is_previous(
+        &self,
+        assignments: &Vec<(i32, i32)>
+    ) -> bool {
+        for assignment in assignments {
+            for new_assignment in &self.new_assignments {
+                if assignment.0 == new_assignment.0 && assignment.1 == new_assignment.1 {
+                    return true;
+                }
+            }
+        }
+
+        false
     }
 
     pub fn is_visited(
