@@ -176,202 +176,215 @@ fn pretty_print(
     }
 }
 
-fn calculate_lowerbound(
-    dist: Arc<Vec<Vec<i128>>>,
-    rounds_lbs: Arc<Mutex<Vec<Vec<i128>>>>,
-    max_rounds: i32,
-    q1: i32,
-    q2: i32,
-    model: Model,
-) {
-    for k in 1..max_rounds {
-        let r: i32 = max_rounds - 1 - k;
-        println!("LB calculation of start = {}, end = {}", r+1, r+k+1);
+// fn calculate_lowerbound(
+//     dist: Arc<Vec<Vec<i128>>>,
+//     rounds_lbs: Arc<Mutex<Vec<Vec<i128>>>>,
+//     max_rounds: i32,
+//     q1: i32,
+//     q2: i32,
+//     model: Model,
+// ) {
+//     for k in 1..max_rounds {
+//         let r: i32 = max_rounds - 1 - k;
+//         println!("LB calculation of start = {}, end = {}", r+1, r+k+1);
 
-        let mut source = Node::new(
-            None,
-            model.get_round_ints(r + 1).clone(),
-            &dist,
-        );
+//         let mut source = Node::new(
+//             None,
+//             model.get_round_ints(r + 1).clone(),
+//             &dist,
+//         );
 
-        source = source.set_round_index(r + 1);
+//         source = source.set_round_index(r + 1);
 
-        let mut upperbound: i128 = 999999;
-        let mut best_solution: Option<Node> = None;
+//         let mut upperbound: i128 = 999999;
+//         let mut best_solution: Option<Node> = None;
 
-        let mut nodes: Vec<Node> = Vec::new();
-        nodes.push(source);
+//         let mut nodes: Vec<Node> = Vec::new();
+//         nodes.push(source);
 
-        // START BRANCH AND BOUND
-        while nodes.len() > 0 {
-            // POP NEW STATE FROM STACK
-            let current_state = nodes.pop().unwrap();
+//         // START BRANCH AND BOUND
+//         while nodes.len() > 0 {
+//             // POP NEW STATE FROM STACK
+//             let current_state = nodes.pop().unwrap();
             
-            // EVALUATE
-            let val = current_state.score;
+//             // EVALUATE
+//             let val = current_state.score;
             
-            if val < upperbound {
-                if (current_state.round_index as usize) == (r + k + 1) as usize {
-                    upperbound = val;
-                    best_solution = Some(current_state.clone());
-                } else {
-                    // ADD ALL FEASIBLE CHILDREN TO EXPLORE
-                    let options = model.get_round_ints(current_state.round_index + 1);
-                    let children = current_state.generate_children_lowerbound(q1, q2, options, upperbound, &rounds_lbs.lock().unwrap(), r + k + 1);
+//             if val < upperbound {
+//                 if (current_state.round_index as usize) == (r + k + 1) as usize {
+//                     upperbound = val;
+//                     best_solution = Some(current_state.clone());
+//                 } else {
+//                     // ADD ALL FEASIBLE CHILDREN TO EXPLORE
+//                     let options = model.get_round_ints(current_state.round_index + 1);
+//                     let children = current_state.generate_children_lowerbound(q1, q2, options, upperbound, &rounds_lbs.lock().unwrap(), r + k + 1);
                     
-                    // CREATE AND ADD ALL CHILDREN
-                    if !children.is_empty() {
-                        for child in children {
-                            let new_node = Node::new(
-                                Some(Box::new(current_state.clone())),
-                                child.clone(),
-                                &dist,
-                            );
-                            nodes.push(new_node);
-                        }
-                    }
-                }
-            }
-        }
+//                     // CREATE AND ADD ALL CHILDREN
+//                     if !children.is_empty() {
+//                         for child in children {
+//                             let new_node = Node::new(
+//                                 Some(Box::new(current_state.clone())),
+//                                 child.clone(),
+//                                 &dist,
+//                             );
+//                             nodes.push(new_node);
+//                         }
+//                     }
+//                 }
+//             }
+//         }
 
-        // println!("{:?}", best_solution.unwrap());
+//         // println!("{:?}", best_solution.unwrap());
 
-        for r1 in (0..=r).rev() {
-            for r2 in (r + k)..max_rounds {
-                let mut data = rounds_lbs.lock().unwrap();
-                let val_1: i128 = data[r1 as usize][r2 as usize].borrow_mut().clone();
-                let val_2: i128 = data[r1 as usize][r as usize].borrow().clone() + upperbound;
-                let val_3: i128 = data[(r + k) as usize][r2 as usize].borrow_mut().clone();
-                let best_val = std::cmp::max(val_1, std::cmp::max(val_2, val_3));
-                *data[r1 as usize][r2 as usize].borrow_mut() = best_val;
-                pretty_print(&data);
-            }
-        }
+//         for r1 in (0..=r).rev() {
+//             for r2 in (r + k)..max_rounds {
+//                 let mut data = rounds_lbs.lock().unwrap();
+//                 let val_1: i128 = data[r1 as usize][r2 as usize].borrow_mut().clone();
+//                 let val_2: i128 = data[r1 as usize][r as usize].borrow().clone() + upperbound;
+//                 let val_3: i128 = data[(r + k) as usize][r2 as usize].borrow_mut().clone();
+//                 let best_val = std::cmp::max(val_1, std::cmp::max(val_2, val_3));
+//                 *data[r1 as usize][r2 as usize].borrow_mut() = best_val;
+//                 pretty_print(&data);
+//             }
+//         }
 
-    }
-}
+//     }
+// }
 
-pub fn branch_and_bound(
-    file_name: &str,
-    q1: i32,
-    q2: i32
-) -> Result<i128, &'static str> {
-    let data = read_data(format!("resources/{}.txt", file_name).as_str()).unwrap();
-    let model = Model::new(&data);
+// pub fn branch_and_bound(
+//     file_name: &str,
+//     q1: i32,
+//     q2: i32
+// ) -> Result<i128, &'static str> {
+//     let data = read_data(format!("resources/{}.txt", file_name).as_str()).unwrap();
+//     let model = Model::new(&data);
 
-    let initial = model.get_round_ints(1);
+//     let initial = model.get_round_ints(1);
 
-    let mut upperbound: i128 = 999999;
-    let mut best_solution: Option<Node> = None;
+//     let mut upperbound: i128 = 999999;
+//     let mut best_solution: Option<Node> = None;
 
-    let source = Node::new(
-        None,
-        initial.clone(),
-        &data.dist,
-    );
+//     let source = Node::new(
+//         None,
+//         initial.clone(),
+//         &data.dist,
+//     );
     
-    // ADD SOURCE NODE TO STACK
-    let mut nodes: Vec<Node> = Vec::new();
-    nodes.push(source.clone());
+//     // ADD SOURCE NODE TO STACK
+//     let mut nodes: Vec<Node> = Vec::new();
+//     nodes.push(source.clone());
 
-    // START LWOERBOUND_THREAD
-    let lowerbound: Arc<Mutex<Vec<Vec<i128>>>> = Arc::new(Mutex::new(vec![vec![0; model.num_rounds as usize]; model.num_rounds as usize]));
-    let lowerbound_clone:Arc<Mutex<Vec<Vec<i128>>>> = Arc::clone(&lowerbound);
+//     // START LWOERBOUND_THREAD
+//     let lowerbound: Arc<Mutex<Vec<Vec<i128>>>> = Arc::new(Mutex::new(vec![vec![0; model.num_rounds as usize]; model.num_rounds as usize]));
+//     let lowerbound_clone:Arc<Mutex<Vec<Vec<i128>>>> = Arc::clone(&lowerbound);
 
-    let dist_clone = Arc::new(data.dist.clone());
-    let dist_clone_lb = Arc::clone(&dist_clone);
+//     let dist_clone = Arc::new(data.dist.clone());
+//     let dist_clone_lb = Arc::clone(&dist_clone);
 
-    let num_rounds = model.num_rounds;
-    let model_clone = model.clone();
-    let handle = thread::spawn(
-        move || {
-            calculate_lowerbound(
-                dist_clone_lb,
-                lowerbound_clone,
-                num_rounds,
-                q1,
-                q2,
-                model_clone,
-            )
-        }
-    );
+//     let num_rounds = model.num_rounds;
+//     let model_clone = model.clone();
+//     let handle = thread::spawn(
+//         move || {
+//             calculate_lowerbound(
+//                 dist_clone_lb,
+//                 lowerbound_clone,
+//                 num_rounds,
+//                 q1,
+//                 q2,
+//                 model_clone,
+//             )
+//         }
+//     );
 
-    handle.join().unwrap();
-    pretty_print(&lowerbound.lock().unwrap());
+//     handle.join().unwrap();
+//     pretty_print(&lowerbound.lock().unwrap());
 
-    // START BRANCH AND BOUND
-    while nodes.len() > 0 {
-        // POP NEW STATE FROM STACK
-        let current_state = nodes.pop().unwrap();
+//     // START BRANCH AND BOUND
+//     while nodes.len() > 0 {
+//         // POP NEW STATE FROM STACK
+//         let current_state = nodes.pop().unwrap();
         
-        // EVALUATE
-        let val = current_state.score;
-        let lb_val = lowerbound.lock().unwrap().clone();
+//         // EVALUATE
+//         let val = current_state.score;
+//         let lb_val = lowerbound.lock().unwrap().clone();
         
-        if val < upperbound {
-            if (current_state.round_index as usize) < num_rounds as usize {
-                // ADD ALL FEASIBLE CHILDREN TO EXPLORE
-                let children = current_state.generate_children(q1, q2, model.get_round_ints(current_state.round_index + 1), upperbound, num_rounds, &lb_val);
+//         if val < upperbound {
+//             if (current_state.round_index as usize) < num_rounds as usize {
+//                 // ADD ALL FEASIBLE CHILDREN TO EXPLORE
+//                 let children = current_state.generate_children(q1, q2, model.get_round_ints(current_state.round_index + 1), upperbound, num_rounds, &lb_val);
 
-                // CREATE AND ADD ALL CHILDREN
-                if !children.is_empty() {
-                    for child in children {
-                        let new_node = Node::new(
-                            Some(Box::new(current_state.clone())),
-                            child.clone(),
-                            &data.dist,
-                        );
-                        nodes.push(new_node);
-                    }
-                }
-            } else {
-                upperbound = val;
-                let lb: &i128 = &lowerbound.lock().unwrap()[0][(num_rounds - 1) as usize];
-                let gap = (upperbound as f64 - *lb as f64) / upperbound as f64;
-                // println!("lowerbound = {}, upperbound = {}, gap = {}", lb, upperbound, gap);
-                best_solution = Some(current_state.clone());
-            }
-        }
-    }
+//                 // CREATE AND ADD ALL CHILDREN
+//                 if !children.is_empty() {
+//                     for child in children {
+//                         let new_node = Node::new(
+//                             Some(Box::new(current_state.clone())),
+//                             child.clone(),
+//                             &data.dist,
+//                         );
+//                         nodes.push(new_node);
+//                     }
+//                 }
+//             } else {
+//                 upperbound = val;
+//                 let lb: &i128 = &lowerbound.lock().unwrap()[0][(num_rounds - 1) as usize];
+//                 let gap = (upperbound as f64 - *lb as f64) / upperbound as f64;
+//                 // println!("lowerbound = {}, upperbound = {}, gap = {}", lb, upperbound, gap);
+//                 best_solution = Some(current_state.clone());
+//             }
+//         }
+//     }
     
-    if let Some(best_solution) = best_solution {
-        best_solution.export(file_name);
-        return Ok(best_solution.score);
-    }
+//     if let Some(best_solution) = best_solution {
+//         best_solution.export(file_name);
+//         return Ok(best_solution.score);
+//     }
 
-    Err("No solution found")
-}
+//     Err("No solution found")
+// }
 
 #[derive(Clone)]
 pub struct Node<'a> {
     parent: Option<Box<Node<'a>>>,
-    new_assignments: Vec<(i32, i32)>,
+    assignment: (i32, i32),
     pub score: i128,
     pub round_index: i32,
     dist: &'a Vec<Vec<i128>>,
-    visited_teams: Vec<Vec<bool>>,
+    visited_teams: Vec<bool>,
 }
 
-// impl<'a> std::fmt::Debug for Node<'a> {
-//     fn fmt(
-//         &self,
-//         f: &mut std::fmt::Formatter<'_>
-//     ) -> std::fmt::Result {
-//         if let Some(parent) = &self.parent {
-//             write!(f, r#"{}
-// {:?}"#, parent, self.new_assignments)
-//         } else {
-//             for i in 0..self.new_assignments.len() {
-//                 let tuple = &self.new_assignments[i];
-//                 write!(f, "{:?}", tuple.0);
-//                 if i != self.new_assignments.len() - 1 {
-//                     write!(f, " ");
-//                 }
-//             }
-//             write!(f, "{:?}")
-//         }
-//     }
-// }
+impl<'a> Node<'a> {
+    pub fn new(
+        parent: Option<Box<Node<'a>>>,
+        assignment: (i32, i32),
+        dist: &'a Vec<Vec<i128>>,
+    ) -> Self {
+        let mut visited_teams = vec![false; dist.len()];
+        visited_teams[(assignment.0 - 1) as usize] = true;
+
+        let mut round_index = 1;
+        let mut score: i128 = 0;
+
+        if let Some(parent) = &parent {
+            round_index += parent.round_index;
+            score += parent.score + dist[(parent.assignment.0 - 1) as usize][(assignment.0 - 1) as usize];
+            
+            for i in 0..visited_teams.len() {
+                if parent.visited_teams[i] == true {
+                    visited_teams[i] = true;
+                }
+            }
+        }
+
+        Self {
+            parent,
+            assignment,
+            score,
+            round_index,
+            dist,
+            visited_teams,
+        }
+    }
+}
 
 impl<'a> std::fmt::Debug for Node<'a> {
     fn fmt(
@@ -380,9 +393,9 @@ impl<'a> std::fmt::Debug for Node<'a> {
     ) -> std::fmt::Result {
         if let Some(parent) = &self.parent {
             write!(f, r#"{:?}
-{:?} {}"#, parent, self.new_assignments, self.score)
+{:?} {}"#, parent, self.assignment, self.score)
         } else {
-            write!(f, "{:?} {:?}", self.new_assignments, self.score)
+            write!(f, "{:?} {:?}", self.assignment, self.score)
         }
     }
 }
@@ -398,409 +411,5 @@ impl<'a> std::fmt::Display for Node<'a> {
         } else {
             write!(f, "{:?}", self.new_assignments)
         }
-    }
-}
-
-impl<'a> Node<'a> {
-    pub fn new(
-        parent: Option<Box<Node<'a>>>,
-        new_assignments: Vec<(i32, i32)>,
-        dist: &'a Vec<Vec<i128>>,
-    ) -> Self {
-        let mut visited_teams: Vec<Vec<bool>> = vec![vec![false; new_assignments.len() * 2]; new_assignments.len()];
-        for i in 0..new_assignments.len() {
-            let assignment = &new_assignments[i];
-            visited_teams[i as usize][(assignment.0 - 1) as usize] = true;
-        }
-        let mut round_index = 1;
-        let mut score: i128 = 0;
-        if let Some(parent) = &parent {
-            round_index += parent.round_index;
-            score += parent.score;
-            for i in 0..new_assignments.len() {
-                let new_assignment = &new_assignments[i];
-                let previous_assignment = parent.new_assignments[i];
-                let from = previous_assignment.0 - 1;
-                let to = new_assignment.0 - 1;
-                score += dist[from as usize][to as usize];
-            }
-
-            for i in 0..visited_teams.len() {
-                for j in 0..visited_teams[i].len() {
-                    if parent.visited_teams[i][j] == true {
-                        visited_teams[i][j] = true;
-                    }
-                }
-            }
-        }
-
-        Self {
-            parent: parent,
-            new_assignments,
-            score,
-            round_index,
-            dist,
-            visited_teams,
-        }
-    }
-
-    pub fn set_round_index(
-        mut self,
-        index: i32,
-    ) -> Self {
-        self.round_index = index;
-        self
-    }
-
-    pub fn pre_evaluate(
-        &self,
-        assignments: &Vec<(i32, i32)>,
-        upperbound: i128,
-        lb_val: &Vec<Vec<i128>>,
-        max_sub_rounds: i32,
-    ) -> bool {
-        let previous_locations: Vec<i32> = self.get_current_locations();
-        let mut score: i128 = self.score;
-
-        for i in 0..previous_locations.len() {
-            let from: i32 = previous_locations[i] - 1;
-            let to: i32 = assignments[i].0 - 1;
-            score += self.dist[from as usize][to as usize];
-        }
-
-        let lowerbound = lb_val[self.round_index as usize][(max_sub_rounds - 1) as usize];
-        // println!("parent_index = {}, my_index = {}, max = {}, lowerbound = {}", self.round_index, self.round_index + 1, max_sub_rounds - 1, lowerbound);
-        lowerbound + score > upperbound
-    }
-
-    pub fn pre_evaluate_lowerbound(
-        &self,
-        assignments: &Vec<(i32, i32)>,
-        upperbound: i128,
-        lb_val: &Vec<Vec<i128>>,
-        max_sub_rounds: i32,
-    ) -> bool {
-        let previous_locations: Vec<i32> = self.get_current_locations();
-        let mut score: i128 = self.score;
-
-        for i in 0..previous_locations.len() {
-            let from: i32 = previous_locations[i] - 1;
-            let to: i32 = assignments[i].0 - 1;
-            score += self.dist[from as usize][to as usize];
-        }
-
-        let lowerbound = lb_val[self.round_index as usize][(max_sub_rounds - 1) as usize];
-        // println!("parent_index = {}, my_index = {}, max = {}, lowerbound = {}", self.round_index, self.round_index + 1, max_sub_rounds - 1, lowerbound);
-        lowerbound + score > upperbound
-    }
-
-    pub fn check_global(
-        &self,
-        num_rounds_left: i32,
-    ) -> bool {
-        let mut counter: Vec<i32> = vec![0; self.visited_teams.len()];
-
-        for i in 0..self.visited_teams.len() {
-            for elem_inner in &self.visited_teams[i as usize] {
-                if !elem_inner {
-                    counter[i] += 1;
-                }
-            }
-        }
-
-        *counter.iter().max().unwrap() <= num_rounds_left
-    }
-
-    pub fn check_global_mutations(
-        &self,
-        num_rounds_left: i32,
-        mutations: &Vec<(i32, i32)>,
-    ) -> bool {
-        let mut counter: Vec<i32> = vec![0; self.visited_teams.len()];
-        let mut new_visited: Vec<Vec<bool>> = self.visited_teams.clone();
-
-        for (i, mutation) in mutations.iter().enumerate() {
-            new_visited[i][(mutation.0 - 1) as usize] = true;
-        }
-
-        for i in 0..new_visited.len() {
-            for elem_inner in &new_visited[i as usize] {
-                if !elem_inner {
-                    counter[i] += 1;
-                }
-            }
-        }
-
-        *counter.iter().max().unwrap() <= num_rounds_left
-    }
-
-    pub fn generate_children(
-        &self,
-        q1: i32,
-        q2: i32,
-        options: Vec<(i32, i32)>,
-        upperbound: i128,
-        num_rounds: i32,
-        lb_val: &Vec<Vec<i128>>,
-    ) -> Vec<Vec<(i32, i32)>> {
-        let mut result = Vec::new();
-
-        if !self.check_global(num_rounds - self.round_index - 1) {
-            return result;
-        }
-
-        let num_checks_q1 = q1 - 2;
-        let stop_round_q1 = self.round_index - num_checks_q1;
-
-        let num_checks_q2 = q2 - 2;
-        let stop_round_q2 = self.round_index - num_checks_q2;
-
-        // permutate(&mut options, 0, &mut result);
-        // println!("result.len() = {}", result.len());
-        result = options.iter().permutations(options.len()).map(|p| p.into_iter().cloned().collect()).collect();
-        result = result.into_iter()
-            .filter(|perm| {
-                let is_previous = self.check_previous(perm);
-                if !is_previous {
-                    return false;
-                }
-
-                let is_q1 = self.check_q1(stop_round_q1, perm);
-                if !is_q1 {
-                    return false;
-                }
-    
-                let is_q2 = self.check_q2(stop_round_q2, perm);
-                if !is_q2 {
-                    return false;
-                }
-
-                let is_pre_evaluated = self.pre_evaluate(perm, upperbound, &lb_val, num_rounds);
-                if is_pre_evaluated {
-                    return false;
-                }
-
-                true
-            })
-            .collect::<Vec<_>>();
-
-        result
-    }
-
-    fn write_to_file(result: &Vec<Vec<(i32, i32)>>, filename: &str) -> std::io::Result<()> {
-        let file = File::create(filename)?;
-        let mut writer = BufWriter::new(file);
-    
-        for line in result {
-            writeln!(writer, "{:?}", line)?;
-        }
-        Ok(())
-    }
-
-    pub fn generate_children_lowerbound(
-        &self,
-        q1: i32,
-        q2: i32,
-        options: Vec<(i32, i32)>,
-        upperbound: i128,
-        lb_val: &Vec<Vec<i128>>,
-        max_sub_rounds: i32,
-    ) -> Vec<Vec<(i32, i32)>> {
-        let num_checks_q1 = q1 - 2;
-        let stop_round_q1 = self.round_index - num_checks_q1;
-
-        let num_checks_q2 = q2 - 2;
-        let stop_round_q2 = self.round_index - num_checks_q2;
-
-        // permutate(&mut options, 0, &mut result);
-        // println!("result.len() = {}", result.len());
-        let permutations: HashSet<Vec<_>> = options.iter().permutations(options.len())
-            .map(|p| p.into_iter().cloned().collect())
-            .collect();
-        let mut result: Vec<_> = permutations.into_iter().collect();
-        // let _ = Self::write_to_file(&result, "result.txt");
-        // let old_len = result.len();
-        // println!("old len = {}", old_len);
-        // result = result.into_iter()
-        //     .filter(|perm| {
-        //         self.check_previous(perm)
-        //     })
-        //     .collect::<Vec<_>>();
-        let old_len = result.len();
-        // println!("old len = {}", old_len);
-        result = result.into_iter()
-            .filter(|perm| {
-                let is_q1 = self.check_q1(stop_round_q1, perm);
-                if !is_q1 {
-                    return false;
-                }
-    
-                let is_q2 = self.check_q2(stop_round_q2, perm);
-                if !is_q2 {
-                    return false;
-                }
-
-                let is_pre_evaluated = self.pre_evaluate_lowerbound(perm, upperbound, &lb_val, max_sub_rounds);
-                if is_pre_evaluated {
-                    return false;
-                }
-
-                true
-            })
-            .collect::<Vec<_>>();
-        if old_len != result.len() {
-            println!("round = {}, num new = {}", self.round_index, result.len());
-        }
-        result
-    }
-
-    pub fn get_current_locations(
-        &self,
-    ) -> Vec<i32> {
-        self.new_assignments.iter().map(|(from, _)| *from).collect()
-    }
-
-    pub fn check_previous(
-        &self,
-        perm: &Vec<(i32, i32)>,
-    ) -> bool {
-        let mut result = true;
-        if let Some(parent) = &self.parent {
-            result = parent.check_previous(perm);
-        };
-        
-        let is_previous = self.is_previous(perm);
-        result && !is_previous
-    }
-
-    pub fn check_q1(
-        &self,
-        stop_round: i32,
-        perm: &Vec<(i32, i32)>,
-    ) -> bool {
-        let mut result = true;
-
-        if stop_round < self.round_index {
-            if let Some(parent) = &self.parent {
-                result = parent.check_q1(stop_round, perm);
-            };
-        }
-        
-        let is_visited = self.is_visited(perm);
-        result && !is_visited
-    }
-
-    pub fn check_q2(
-        &self,
-        stop_round: i32,
-        assignments: &Vec<(i32, i32)>
-    ) -> bool {
-        let mut result = true;
-        
-        if stop_round < self.round_index {
-            if let Some(parent) = &self.parent {
-                result = parent.check_q2(stop_round, assignments);
-            }
-        }
-        
-        let is_officiated = self.is_officiated(assignments);
-        result && !is_officiated
-    }
-
-    pub fn is_previous(
-        &self,
-        assignments: &Vec<(i32, i32)>
-    ) -> bool {
-        for assignment in assignments {
-            for new_assignment in &self.new_assignments {
-                if assignment.0 == new_assignment.0 && assignment.1 == new_assignment.1 {
-                    return true;
-                }
-            }
-        }
-
-        false
-    }
-
-    pub fn is_visited(
-        &self,
-        assignments: &Vec<(i32, i32)>
-    ) -> bool {
-        for i in 0..assignments.len() {
-            let assignment = assignments[i];
-            let new_assignment = self.new_assignments[i];
-            if assignment.0 == new_assignment.0 {
-                return true;
-            }
-        }
-
-        false
-    }
-
-    pub fn is_officiated(
-        &self,
-        assignments: &Vec<(i32, i32)>
-    ) -> bool {
-        for i in 0..assignments.len() {
-            let assignment = assignments[i];
-            let new_assignment = self.new_assignments[i];
-            
-            if assignment.0 == new_assignment.0 || assignment.0 == new_assignment.1 || 
-               assignment.1 == new_assignment.0 || assignment.1 == new_assignment.1 {
-                return true;
-            }
-        }
-
-        false
-    }
-
-    pub fn export_vec(
-        &self,
-    ) -> Vec<Vec<i32>> {
-        let mut result;
-        
-        if let Some(parent) = &self.parent {
-            result = parent.export_vec();
-        } else {
-            result = Vec::new();
-            for _ in 0..self.new_assignments.len() {
-                result.push(Vec::new());
-            }
-        }
-
-        for i in 0..self.new_assignments.len() {
-            result[i].push(self.new_assignments[i].0)
-        }
-
-        result
-    }
-
-    pub fn export(
-        &self,
-        name: &str,
-    ) {
-        let _ = self.export_vec();
-        let _  =File::create(format!("solution_{}.txt", name))
-                            .expect("Could not create file")
-                            .write_all(format!("{}", self)
-                            .as_bytes());
-    }
-
-    pub fn export_pdf(
-        &self,
-        name: &str,
-    ) {
-        let result = self.export_vec();
-        let mut file = File::create(format!("solution_{}.txt", name)).expect("Could not create file");
-        for i in 0..result.len() {
-            for j in 0..result[i].len() {
-                let elem = &result[i][j];
-                file.write_all(format!("{}", elem).as_bytes()).expect("Could not write to file");
-                if i != result.len() - 1 || j != result[i].len() - 1 {
-                    file.write_all(b",").expect("Could not write to file");
-                }
-            }
-        }
-        let _ = file.write_all(format!("{}", self).as_bytes());
     }
 }
