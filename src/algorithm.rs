@@ -208,13 +208,6 @@ fn calculate_lowerbound(
             let val = current_state.score;
             
             if val < upperbound {
-                // let lb_val = rounds_lbs.lock().unwrap();
-                // let lowerbound = lb_val[(current_state.round_index - 1) as usize][(max_rounds - 1) as usize];
-    
-                // if lowerbound + val > upperbound {
-                //     continue;
-                // }
-                
                 if (current_state.round_index as usize) == (r + k + 1) as usize {
                     upperbound = val;
                     best_solution = Some(current_state.clone());
@@ -240,7 +233,6 @@ fn calculate_lowerbound(
 
         // println!("{:?}", best_solution.unwrap());
 
-        // println!("best = {}, k = {}, r = {}", best, k, r);
         for r1 in (0..=r).rev() {
             for r2 in (r + k)..max_rounds {
                 let mut data = rounds_lbs.lock().unwrap();
@@ -301,8 +293,8 @@ pub fn branch_and_bound(
         }
     );
 
-    handle.join().unwrap();
-    pretty_print(&lowerbound.lock().unwrap());
+    // handle.join().unwrap();
+    // pretty_print(&lowerbound.lock().unwrap());
 
     // START BRANCH AND BOUND
     while nodes.len() > 0 {
@@ -331,6 +323,8 @@ pub fn branch_and_bound(
                 }
             } else {
                 upperbound = val;
+                println!("Contesting lock");
+                println!("lowerbound = {}, upperbound = {}", &lowerbound.lock().unwrap()[0][(num_rounds - 1) as usize], upperbound);
                 best_solution = Some(current_state.clone());
             }
         }
@@ -539,7 +533,7 @@ impl<'a> Node<'a> {
         q1: i32,
         q2: i32,
         options: Vec<(i32, i32)>,
-        best: i128,
+        upperbound: i128,
         num_rounds: i32,
         lb_val: &Vec<Vec<i128>>,
     ) -> Vec<Vec<(i32, i32)>> {
@@ -570,7 +564,7 @@ impl<'a> Node<'a> {
                     return false;
                 }
 
-                let is_pre_evaluated = self.pre_evaluate(perm, best, &lb_val, num_rounds);
+                let is_pre_evaluated = self.pre_evaluate(perm, upperbound, &lb_val, num_rounds);
                 if is_pre_evaluated {
                     return false;
                 }

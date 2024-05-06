@@ -65,7 +65,7 @@ mod benchs {
 
         b.iter(|| {
             let result: Result<i128, &str> = branch_and_bound("umps10", 5, 2);
-            // assert_eq!(result, Ok(48942));
+            assert_eq!(result, Ok(48942));
             *print.borrow_mut() = Some(result.expect("Failed"));
         });
 
@@ -78,7 +78,7 @@ mod benchs {
 
         b.iter(|| {
             let result: Result<i128, &str> = branch_and_bound("umps10A", 5, 2);
-            // assert_eq!(result, Ok(46551));
+            assert_eq!(result, Ok(46551));
             *print.borrow_mut() = Some(result.expect("Failed"));
         });
 
@@ -91,7 +91,7 @@ mod benchs {
 
         b.iter(|| {
             let result: Result<i128, &str> = branch_and_bound("umps10B", 5, 2);
-            // assert_eq!(result, Ok(45609));
+            assert_eq!(result, Ok(45609));
             *print.borrow_mut() = Some(result.expect("Failed"));
         });
 
@@ -104,7 +104,59 @@ mod benchs {
 
         b.iter(|| {
             let result: Result<i128, &str> = branch_and_bound("umps10C", 5, 2);
-            // assert_eq!(result, Ok(43149));
+            assert_eq!(result, Ok(43149));
+            *print.borrow_mut() = Some(result.unwrap());
+        });
+
+        eprint!("Result: {:?} ", *print.borrow());
+    }
+    
+    #[bench]
+    fn umps12_7_2(b: &mut Bencher) {
+        let print: RefCell<Option<i128>> = RefCell::new(None::<i128>);
+
+        b.iter(|| {
+            let result: Result<i128, &str> = branch_and_bound("umps12", 7, 2);
+            assert_eq!(result, Ok(86889));
+            *print.borrow_mut() = Some(result.expect("Failed"));
+        });
+
+        eprint!("Result: {:?} ", *print.borrow());
+    }
+    
+    #[bench]
+    fn umps12_6_3(b: &mut Bencher) {
+        let print: RefCell<Option<i128>> = RefCell::new(None::<i128>);
+
+        b.iter(|| {
+            let result: Result<i128, &str> = branch_and_bound("umps12", 6, 3);
+            assert_eq!(result, Ok(95259));
+            *print.borrow_mut() = Some(result.expect("Failed"));
+        });
+
+        eprint!("Result: {:?} ", *print.borrow());
+    }
+    
+    #[bench]
+    fn umps12_5_3(b: &mut Bencher) {
+        let print: RefCell<Option<i128>> = RefCell::new(None::<i128>);
+
+        b.iter(|| {
+            let result: Result<i128, &str> = branch_and_bound("umps12", 5, 3);
+            assert_eq!(result, Ok(93679));
+            *print.borrow_mut() = Some(result.unwrap());
+        });
+
+        eprint!("Result: {:?} ", *print.borrow());
+    }
+    
+    #[bench]
+    fn umps12_4_3(b: &mut Bencher) {
+        let print: RefCell<Option<i128>> = RefCell::new(None::<i128>);
+
+        b.iter(|| {
+            let result: Result<i128, &str> = branch_and_bound("umps12", 4, 3);
+            assert_eq!(result, Ok(89826));
             *print.borrow_mut() = Some(result.unwrap());
         });
 
