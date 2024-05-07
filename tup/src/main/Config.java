@@ -8,4 +8,6 @@ public class Config {
     public static int NUM_UMPIRES;
     public static int NUM_GAMES;
 
+    public static String FILE_NAME;
+
 }
