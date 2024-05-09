@@ -10,4 +10,5 @@ public class Config {
 
     public static String FILE_NAME;
 
+    public static int UNASSIGNED = -99999;
 }

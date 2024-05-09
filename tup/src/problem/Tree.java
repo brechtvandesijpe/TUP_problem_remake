@@ -2,12 +2,12 @@ package problem;
 
 import model.Instance;
 
+import java.util.Arrays;
 import java.util.HashSet;
 
 public class Tree {
     private final Instance instance;
     private final Pruner pruner;
-
     private final int startRoundIndex;
     private final int endRoundIndex;
     private final boolean isSub;
@@ -24,7 +24,7 @@ public class Tree {
     }
 
     public void startGlobalTraversal() {
-        System.out.println("e");
+        System.out.println(Arrays.deepToString(Instance.roundStadium));
     }
 
     public int[] getFeasibleAllocations(int umpire, int currentRoundIndex) {
