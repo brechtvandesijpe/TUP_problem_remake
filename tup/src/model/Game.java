@@ -15,6 +15,18 @@ public class Game {
         this.outPlayerId = outPlayerId;
     }
 
+    public int getRound() {
+        return round;
+    }
+
+    public int getHomePlayerId() {
+        return homePlayerId;
+    }
+
+    public int getOutPlayerId() {
+        return outPlayerId;
+    }
+
     @Override
     public String toString() {
         return "Game{" +

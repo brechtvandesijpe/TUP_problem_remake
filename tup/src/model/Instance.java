@@ -38,5 +38,11 @@ public class Instance {
         return opponents[round][playerId] > 0;
     }
 
+    public static int getInterStadiumDistance(int previousGameId, int currentGameId) {
+        return distances[games[currentGameId].getHomePlayerId()][games[previousGameId].getHomePlayerId()];
+    }
 
+    public static Game getGame(int gameId) {
+        return games[gameId];
+    }
 }
