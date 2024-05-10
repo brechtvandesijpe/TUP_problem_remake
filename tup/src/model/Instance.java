@@ -42,6 +42,24 @@ public class Instance {
         return distances[games[currentGameId].getHomePlayerId()][games[previousGameId].getHomePlayerId()];
     }
 
+    public static int determineGameForPlayer(int roundIndex, int playerId) {
+        int gameNumber;
+        if (isHomeGame(roundIndex, playerId)) {
+            gameNumber = Instance.roundStadium[roundIndex][playerId];
+        } else {
+            gameNumber = Instance.roundStadium[roundIndex][getOpponentOfPlayerInRound(playerId, roundIndex) * (-1) - 1];
+        }
+        return gameNumber - ((gameNumber / NUM_UMPIRES) * NUM_UMPIRES);
+    }
+
+    public static int getOpponentOfPlayerInRound(int playerId, int round) {
+        return opponents[round][playerId];
+    }
+
+    public static int getTravelDistanceBetween(int stadium1, int stadium2) {
+        return distances[stadium1][stadium2];
+    }
+
     public static Game getGame(int gameId) {
         return games[gameId];
     }

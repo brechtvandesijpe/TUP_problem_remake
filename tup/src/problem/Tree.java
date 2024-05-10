@@ -5,23 +5,37 @@ import model.Instance;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
 import static main.Config.*;
-import static model.Instance.getGame;
-import static model.Instance.getInterStadiumDistance;
+import static model.Instance.*;
 
 public class Tree {
-    private final Instance instance;
     private final Pruner pruner;
+    private final boolean isSub;
+
+    private final int[][] solution;
+    private int[][] UBSolution;
+
+    private final Instance instance;
+
     private final int startRoundIndex;
     private final int endRoundIndex;
-    private final boolean isSub;
+
+    private int upperbound = Integer.MAX_VALUE;
+
     public final int[][] umpireScheduleByRound;
     private final int[] gameUmpireLookup;
-    private HashSet<Integer> prunedGames;
+
     private final int branchStart;
+
+    private HashSet<Integer> prunedGames;
+
     private int partialDistance;
+    private int totalDistance;
+    private int eval;
+
 
     public Tree(Instance instance, int startRoundIndex, int endRoundIndex, boolean isSub) {
         this.isSub = isSub;
@@ -31,24 +45,70 @@ public class Tree {
         this.branchStart = startRoundIndex * NUM_UMPIRES;
         this.gameUmpireLookup = new int[NUM_GAMES];
         this.umpireScheduleByRound = new int[NUM_UMPIRES][NUM_ROUNDS];
+        this.solution = new int[NUM_ROUNDS][NUM_UMPIRES];
         this.pruner = new Pruner(this);
     }
 
     public void startGlobalTraversal() {
         preventSolutionRotation();
+        performTraversal(0, startRoundIndex + 1);
     }
 
-    public Set<Integer> getFeasibleAllocations(int umpire, int currentRoundIndex) {
+    public int[] getFeasibleAllocations(int umpire, int currentRoundIndex) {
         prunedGames = pruner.pruneGames(umpire, currentRoundIndex);
-        return prunedGames;
+       // System.out.println("pruned games: " + prunedGames.size());
+        int[][] gameGreedyDistance = createGameGreedyDistanceArray(umpire, currentRoundIndex);
+        return extractResultFromGameGreedyDistance(gameGreedyDistance);
+    }
+
+    public int[][] createGameGreedyDistanceArray(int umpire, int currentRoundIndex) {
+        int[][] gameGreedyDistance = IntStream.range(0, NUM_UMPIRES)
+                .filter(umpireId -> !prunedGames.contains(umpireId))
+                .mapToObj(umpireId -> {
+                    int branchStart = NUM_UMPIRES * currentRoundIndex;
+                    int gameCurrentRound = branchStart + umpireId;
+                    int previousRound = currentRoundIndex - 1;
+                    int gamePreviousRound = umpireScheduleByRound[umpire][previousRound];
+                    int greedyDistance = getInterStadiumDistance(gamePreviousRound, gameCurrentRound);
+                    return new int[]{gameCurrentRound, greedyDistance};
+                })
+                .toArray(int[][]::new);
+        return gameGreedyDistance;
+    }
+
+    public int[] extractResultFromGameGreedyDistance(int[][] gameGreedyDistance) {
+        int[] sortedListOfFeasibleAllocations = new int[gameGreedyDistance.length];
+        for (int ggd = 0; ggd < gameGreedyDistance.length; ggd++) {
+            sortedListOfFeasibleAllocations[ggd] = gameGreedyDistance[ggd][0];
+        }
+        return sortedListOfFeasibleAllocations;
     }
 
     // Algorithm 2.1: Branch-and-bound algorithm
     public void performTraversal(int umpire, int currentRoundIndex) {
-        Set<Integer> sortedListOfFeasibleAllocations = getFeasibleAllocations(umpire, currentRoundIndex);
+        int[] sortedListOfFeasibleAllocations = getFeasibleAllocations(umpire, currentRoundIndex);
         // Iterate through each feasible allocation
         for (int a : sortedListOfFeasibleAllocations) {
+            if (a != UNASSIGNED) {
+                assign(a, umpire);
 
+                //System.out.println("PartialDist: " + partialDistance + ", upperb: " + upperbound);
+                if (partialDistance >= upperbound) {
+                    unassign(a, umpire);
+                    continue; // Prune the branch
+                }
+
+                if (isReadyForLocalSearch(umpire, currentRoundIndex)) {
+                    IntStream.rangeClosed(branchStart, NUM_UMPIRES * (1 + endRoundIndex) - 1).forEach(g -> solution[getGame(g).getRound()][gameUmpireLookup[g]] = g);
+                    if (evaluate() < upperbound) {
+                        setUpperbound();
+                    }
+                } else {
+                    // Recur to the next umpire and round
+                    performTraversal(getNextUmpireId(umpire), getNextRoundIndex(umpire, currentRoundIndex));
+                }
+                unassign(a, umpire);
+            }
         }
     }
 
@@ -75,5 +135,73 @@ public class Tree {
             gameUmpireLookup[gameId] = umpireId;
         });
         System.out.println("Fixed round " + startRoundIndex);
+    }
+
+    // ********** EVALUATION
+    public int evaluate() {
+        totalDistance = IntStream.range(startRoundIndex, endRoundIndex)
+                .map(round -> IntStream.range(0, NUM_UMPIRES)
+                        .map(umpireId -> {
+                            int nextRound = round + 1;
+                            int nextStadium = getGame(solution[nextRound][umpireId]).getHomePlayerId();
+                            int currentStadium = getGame(solution[round][umpireId]).getHomePlayerId();
+                            return getTravelDistanceBetween(nextStadium, currentStadium);
+                        })
+                        .sum())
+                .sum();
+
+        if (!isSub) {
+            evaluateGlobalConstraint();
+        }
+        // eval != 0 -> infeasible
+        return eval != 0 ? Integer.MAX_VALUE : totalDistance;
+    }
+
+    public void evaluateGlobalConstraint() {
+        int[][] stadiumCount = new int[NUM_UMPIRES][NUM_TEAMS];
+        calculateStadiumCount(stadiumCount);
+        eval = evaluateStadiumCounts(stadiumCount);
+    }
+
+    public void calculateStadiumCount(int[][] stadiumCount) {
+        IntStream.range(0, NUM_ROUNDS).forEach(round -> IntStream.range(0, NUM_UMPIRES).forEach(umpireId -> stadiumCount[umpireId][getGame(solution[round][umpireId]).getHomePlayerId()] += 1));
+    }
+
+    public int evaluateStadiumCounts(int[][] stadiumCount) {
+        return IntStream.range(0, NUM_UMPIRES).flatMap(umpireId -> IntStream.range(0, NUM_TEAMS).filter(stadium -> stadiumCount[umpireId][stadium] < 1)).map(stadium -> INFEASIBLE_WEIGHT).sum();
+    }
+
+    // ************** CHECKS
+
+    public int getNextUmpireId(int currentUmpireId) {
+        return isLastUmpire(currentUmpireId) ? 0 : currentUmpireId + 1;
+    }
+
+    public int getNextRoundIndex(int currentUmpireId, int currentRoundIndex) {
+        return isLastUmpire(currentUmpireId) ? currentRoundIndex + 1 : currentRoundIndex;
+    }
+
+    public boolean isReadyForLocalSearch(int umpireId, int currentRoundIndex) {
+        // end of branch
+        return isLastUmpire(umpireId) && currentRoundIndex == endRoundIndex;
+    }
+
+    public boolean isLastUmpire(int umpireId) {
+        return umpireId == NUM_UMPIRES - 1;
+    }
+
+    // ******** SETTERS
+    public void setUpperbound() {
+        UBSolution = solution;
+        upperbound = evaluate();
+    }
+
+    // ******** GETTERS
+    public int getUpperbound() {
+        return upperbound;
+    }
+
+    public int getStartRoundIndex() {
+        return startRoundIndex;
     }
 }
