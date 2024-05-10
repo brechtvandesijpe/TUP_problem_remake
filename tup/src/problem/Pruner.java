@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.stream.IntStream;
 
 import static main.Config.NUM_UMPIRES;
+import static model.Instance.determineGameForPlayer;
 import static model.Instance.getGame;
 
 public class Pruner {
@@ -15,6 +16,7 @@ public class Pruner {
     private int startRoundForQ1Constraint;
     private int startRoundForQ2Constraint;
     private int numPrunedBasedAfterQ1 = 0;
+    private int numPrunedBasedAfterQ2 = 0;
     private int numPrunedBasedAfterPreviousAssignments = 0;
     public static int numPrunedGames = 0;
 
@@ -31,6 +33,7 @@ public class Pruner {
     public HashSet<Integer> pruneGames(int umpire, int currentRoundIndex) {
         initPruner(currentRoundIndex);
         pruneBasedOnQ1Constraint(umpire, currentRoundIndex);
+        pruneBasedOnQ2Constraint(umpire, currentRoundIndex);
         pruneBasedOnPreviousAssignments(umpire, currentRoundIndex);
         numPrunedGames += prunedGames.size();
         return prunedGames;
@@ -47,6 +50,20 @@ public class Pruner {
             }
         }
         numPrunedBasedAfterQ1 += prunedGames.size();
+    }
+
+    public void pruneBasedOnQ2Constraint(int umpire, int roundIndex) {
+        IntStream.range(startRoundForQ2Constraint, roundIndex).flatMap(r -> {
+            int gameId = tree.umpireScheduleByRound[umpire][r];
+            int homePlayerId = getGame(gameId).getHomePlayerId();
+            int outPlayerId = getGame(gameId).getOutPlayerId();
+
+            int game1 = determineGameForPlayer(roundIndex, homePlayerId);
+            int game2 = determineGameForPlayer(roundIndex, outPlayerId);
+
+            return IntStream.of(game1, game2);
+        }).forEach(prunedGames::add);
+        numPrunedBasedAfterQ2 += prunedGames.size();
     }
 
     public void pruneBasedOnPreviousAssignments(int umpire, int roundIndex) {
