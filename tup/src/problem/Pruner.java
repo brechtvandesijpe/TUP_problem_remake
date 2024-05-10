@@ -1,17 +1,21 @@
 package problem;
 
 import main.Config;
+import model.Instance;
 
 import java.util.HashSet;
 import java.util.stream.IntStream;
 
 import static main.Config.NUM_UMPIRES;
+import static model.Instance.getGame;
 
 public class Pruner {
     private final Tree tree;
     private HashSet<Integer> prunedGames;
     private int startRoundForQ1Constraint;
     private int startRoundForQ2Constraint;
+    private int numPrunedBasedAfterQ1 = 0;
+    private int numPrunedBasedAfterPreviousAssignments = 0;
     public static int numPrunedGames = 0;
 
     public Pruner(Tree tree) {
@@ -26,14 +30,31 @@ public class Pruner {
 
     public HashSet<Integer> pruneGames(int umpire, int currentRoundIndex) {
         initPruner(currentRoundIndex);
+        pruneBasedOnQ1Constraint(umpire, currentRoundIndex);
         pruneBasedOnPreviousAssignments(umpire, currentRoundIndex);
         numPrunedGames += prunedGames.size();
-        System.out.println("NumPruendGames: " + numPrunedGames);
         return prunedGames;
+    }
+
+    public void pruneBasedOnQ1Constraint(int umpire, int roundIndex) {
+        for (int r = startRoundForQ1Constraint; r < roundIndex; r++) {
+            int playerId = getGame(tree.umpireScheduleByRound[umpire][r]).getHomePlayerId();
+            if (isAssigned(Instance.roundStadium[roundIndex][playerId])) {
+                int stadiumIndex = Math.floorMod(Instance.roundStadium[roundIndex][playerId], NUM_UMPIRES);
+                if (isAssigned(stadiumIndex)) {
+                    prunedGames.add(stadiumIndex);
+                }
+            }
+        }
+        numPrunedBasedAfterQ1 += prunedGames.size();
     }
 
     public void pruneBasedOnPreviousAssignments(int umpire, int roundIndex) {
         IntStream.range(0, umpire).mapToObj(uid -> Math.floorMod(tree.umpireScheduleByRound[uid][roundIndex], NUM_UMPIRES)).forEach(prunedGames::add);
+        numPrunedBasedAfterPreviousAssignments += prunedGames.size();
     }
 
+    public boolean isAssigned(int gameId) {
+        return 0 <= gameId;
+    }
 }
