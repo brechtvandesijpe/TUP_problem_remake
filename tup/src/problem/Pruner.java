@@ -74,4 +74,12 @@ public class Pruner {
     public boolean isAssigned(int gameId) {
         return 0 <= gameId;
     }
+
+    public void printPruningInfo() {
+        System.out.println("Pruning Information:");
+        System.out.println("Number of pruned games: " + numPrunedGames);
+        System.out.println("Number of pruned games based after Q1 constraint: " + numPrunedBasedAfterQ1);
+        System.out.println("Number of pruned games based after Q2 constraint: " + numPrunedBasedAfterQ2);
+        System.out.println("Number of pruned games based after previous assignments: " + numPrunedBasedAfterPreviousAssignments);
+    }
 }

@@ -2,9 +2,7 @@ package problem;
 
 import model.Instance;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
@@ -36,6 +34,7 @@ public class Tree {
     private int totalDistance;
     private int eval;
 
+    private final Map<BranchStrategy, Runnable> strategyMap = new HashMap<>();
 
     public Tree(Instance instance, int startRoundIndex, int endRoundIndex, boolean isSub) {
         this.isSub = isSub;
@@ -56,8 +55,15 @@ public class Tree {
 
     public int[] getFeasibleAllocations(int umpire, int currentRoundIndex) {
         prunedGames = pruner.pruneGames(umpire, currentRoundIndex);
-       // System.out.println("pruned games: " + prunedGames.size());
+        if (DEBUG_PRUNER) {
+            pruner.printPruningInfo();
+        }
         int[][] gameGreedyDistance = createGameGreedyDistanceArray(umpire, currentRoundIndex);
+
+        strategyMap.put(BranchStrategy.BFS_DISTANCE, () -> sortGameGreedyDistanceArray(gameGreedyDistance));
+        strategyMap.put(BranchStrategy.SHUFFLE, () -> {/* todo */});
+        strategyMap.put(BranchStrategy.DFS, () -> {/* no action required */});
+        strategyMap.getOrDefault(BRANCH_STRATEGY, () -> {/* default action */}).run();
         return extractResultFromGameGreedyDistance(gameGreedyDistance);
     }
 
@@ -87,6 +93,10 @@ public class Tree {
             sortedListOfFeasibleAllocations[ggd] = gameGreedyDistance[ggd][0];
         }
         return sortedListOfFeasibleAllocations;
+    }
+
+    public void sortGameGreedyDistanceArray(int[][] gameGreedyDistance) {
+        Arrays.sort(gameGreedyDistance, Comparator.comparingInt(ggd -> ggd[1]));
     }
 
     // Algorithm 2.1: Branch-and-bound algorithm
@@ -209,4 +219,5 @@ public class Tree {
     public int getStartRoundIndex() {
         return startRoundIndex;
     }
+
 }

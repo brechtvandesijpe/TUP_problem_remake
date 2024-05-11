@@ -1,5 +1,7 @@
 package main;
 
+import problem.BranchStrategy;
+
 public class Config {
     public static int Q1;
     public static int Q2;
@@ -10,8 +12,12 @@ public class Config {
 
     public static String FILE_NAME;
 
+    // SETTINGS COMPONENTS
+    public static BranchStrategy BRANCH_STRATEGY = BranchStrategy.BFS_DISTANCE;
+
     // SETTINGS DEBUGGING
     public static boolean DEBUG_TREE = false;
+    public static boolean DEBUG_PRUNER = false;
 
     // PARAMETERS
     public static int INFEASIBLE_WEIGHT = 10;
