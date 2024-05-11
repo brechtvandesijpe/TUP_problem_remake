@@ -69,17 +69,14 @@ public class Tree {
 
     public int[][] createGameGreedyDistanceArray(int umpire, int currentRoundIndex) {
         long startTime = System.currentTimeMillis();
-        int[][] gameGreedyDistance = IntStream.range(0, NUM_UMPIRES)
-                .filter(umpireId -> !prunedGames.contains(umpireId))
-                .mapToObj(umpireId -> {
-                    int branchStart = NUM_UMPIRES * currentRoundIndex;
-                    int gameCurrentRound = branchStart + umpireId;
-                    int previousRound = currentRoundIndex - 1;
-                    int gamePreviousRound = umpireScheduleByRound[umpire][previousRound];
-                    int greedyDistance = getInterStadiumDistance(gamePreviousRound, gameCurrentRound);
-                    return new int[]{gameCurrentRound, greedyDistance};
-                })
-                .toArray(int[][]::new);
+        int[][] gameGreedyDistance = IntStream.range(0, NUM_UMPIRES).filter(umpireId -> !prunedGames.contains(umpireId)).mapToObj(umpireId -> {
+            int branchStart = NUM_UMPIRES * currentRoundIndex;
+            int gameCurrentRound = branchStart + umpireId;
+            int previousRound = currentRoundIndex - 1;
+            int gamePreviousRound = umpireScheduleByRound[umpire][previousRound];
+            int greedyDistance = getInterStadiumDistance(gamePreviousRound, gameCurrentRound);
+            return new int[]{gameCurrentRound, greedyDistance};
+        }).toArray(int[][]::new);
         long endTime = System.currentTimeMillis();
         if (DEBUG_TREE) {
             System.out.println("Creating the greedy matrix took: " + (endTime - startTime) + " msec.");
@@ -154,16 +151,12 @@ public class Tree {
 
     // ********** EVALUATION
     public int evaluate() {
-        totalDistance = IntStream.range(startRoundIndex, endRoundIndex)
-                .map(round -> IntStream.range(0, NUM_UMPIRES)
-                        .map(umpireId -> {
-                            int nextRound = round + 1;
-                            int nextStadium = getGame(solution[nextRound][umpireId]).getHomePlayerId();
-                            int currentStadium = getGame(solution[round][umpireId]).getHomePlayerId();
-                            return getTravelDistanceBetween(nextStadium, currentStadium);
-                        })
-                        .sum())
-                .sum();
+        totalDistance = IntStream.range(startRoundIndex, endRoundIndex).map(round -> IntStream.range(0, NUM_UMPIRES).map(umpireId -> {
+            int nextRound = round + 1;
+            int nextStadium = getGame(solution[nextRound][umpireId]).getHomePlayerId();
+            int currentStadium = getGame(solution[round][umpireId]).getHomePlayerId();
+            return getTravelDistanceBetween(nextStadium, currentStadium);
+        }).sum()).sum();
 
         if (!isSub) {
             evaluateGlobalConstraint();
@@ -220,4 +213,7 @@ public class Tree {
         return startRoundIndex;
     }
 
+    public Instance getInstance() {
+        return instance;
+    }
 }
