@@ -18,6 +18,7 @@ public class Config {
     // SETTINGS DEBUGGING
     public static boolean DEBUG_TREE = false;
     public static boolean DEBUG_PRUNER = false;
+    public static boolean DEBUG_LOWERBOUND_CALCULATOR = false;
 
     // PARAMETERS
     public static int INFEASIBLE_WEIGHT = 10;

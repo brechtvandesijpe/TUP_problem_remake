@@ -3,20 +3,20 @@ package problem;
 import model.Instance;
 
 import java.util.*;
-import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
 import static main.Config.*;
 import static model.Instance.*;
 
 public class Tree {
+
+    private final Instance instance;
+    private LowerboundCalculator lowerboundCalculator;
     private final Pruner pruner;
     private final boolean isSub;
 
     private final int[][] solution;
     private int[][] UBSolution;
-
-    private final Instance instance;
 
     private final int startRoundIndex;
     private final int endRoundIndex;
@@ -49,6 +49,12 @@ public class Tree {
     }
 
     public void startGlobalTraversal() {
+        preventSolutionRotation();
+        performTraversal(0, startRoundIndex + 1);
+    }
+
+    public void startSubTraversal(LowerboundCalculator lowerboundCalculator) {
+        this.lowerboundCalculator = lowerboundCalculator;
         preventSolutionRotation();
         performTraversal(0, startRoundIndex + 1);
     }
@@ -215,5 +221,9 @@ public class Tree {
 
     public Instance getInstance() {
         return instance;
+    }
+
+    public int getTotalDistance() {
+        return totalDistance;
     }
 }
