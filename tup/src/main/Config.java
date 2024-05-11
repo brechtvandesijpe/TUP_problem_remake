@@ -13,6 +13,8 @@ public class Config {
     public static String FILE_NAME;
 
     // SETTINGS COMPONENTS
+    public static boolean LOWERBOUND_ENABLED = true;
+    public static boolean ASYNC = true;
     public static BranchStrategy BRANCH_STRATEGY = BranchStrategy.BFS_DISTANCE;
 
     // SETTINGS DEBUGGING

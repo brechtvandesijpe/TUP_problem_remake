@@ -3,6 +3,7 @@ package problem;
 import model.Instance;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.IntStream;
 
 import static main.Config.*;
@@ -22,6 +23,7 @@ public class Tree {
     private final int endRoundIndex;
 
     private int upperbound = Integer.MAX_VALUE;
+    private int lowerbound;
 
     public final int[][] umpireScheduleByRound;
     private final int[] gameUmpireLookup;
@@ -50,13 +52,31 @@ public class Tree {
 
     public void startGlobalTraversal() {
         preventSolutionRotation();
-        performTraversal(0, startRoundIndex + 1);
+        if (LOWERBOUND_ENABLED) {
+            CompletableFuture<Void> lowerboundFuture = ASYNC ? startLowerBoundCalculationAsync() : null;
+            performTraversal(0, startRoundIndex + 1);
+            cancelLowerBoundCalculation(lowerboundFuture);
+        } else {
+            //System.out.println("geen lowerbound");
+            performTraversal(0, startRoundIndex + 1);
+        }
     }
 
     public void startSubTraversal(LowerboundCalculator lowerboundCalculator) {
         this.lowerboundCalculator = lowerboundCalculator;
         preventSolutionRotation();
         performTraversal(0, startRoundIndex + 1);
+    }
+
+    public void cancelLowerBoundCalculation(CompletableFuture<Void> lowerboundFuture) {
+        if (lowerboundFuture != null) {
+            lowerboundFuture.cancel(true);
+        }
+    }
+
+    public CompletableFuture<Void> startLowerBoundCalculationAsync() {
+        lowerboundCalculator = new LowerboundCalculator(this);
+        return CompletableFuture.runAsync(lowerboundCalculator::calculateLBs);
     }
 
     public int[] getFeasibleAllocations(int umpire, int currentRoundIndex) {
@@ -110,8 +130,15 @@ public class Tree {
             if (a != UNASSIGNED) {
                 assign(a, umpire);
 
+                // Calculate the lower bound for the current round, untill the end round
+                lowerbound = LOWERBOUND_ENABLED ? lowerboundCalculator.getLBOfRounds(currentRoundIndex, endRoundIndex) : 0;
+                if (DEBUG_TREE && LOWERBOUND_ENABLED) {
+                    System.out.println("LB: {" + currentRoundIndex + " - " + endRoundIndex + "}, " + lowerbound);
+                }
+
                 //System.out.println("PartialDist: " + partialDistance + ", upperb: " + upperbound);
-                if (partialDistance >= upperbound) {
+                if (partialDistance + lowerbound >= upperbound) {
+                    System.out.println("teeeeeeeeeeest");
                     unassign(a, umpire);
                     continue; // Prune the branch
                 }
