@@ -62,6 +62,7 @@ public class Tree {
     }
 
     public int[][] createGameGreedyDistanceArray(int umpire, int currentRoundIndex) {
+        long startTime = System.currentTimeMillis();
         int[][] gameGreedyDistance = IntStream.range(0, NUM_UMPIRES)
                 .filter(umpireId -> !prunedGames.contains(umpireId))
                 .mapToObj(umpireId -> {
@@ -73,6 +74,10 @@ public class Tree {
                     return new int[]{gameCurrentRound, greedyDistance};
                 })
                 .toArray(int[][]::new);
+        long endTime = System.currentTimeMillis();
+        if (DEBUG_TREE) {
+            System.out.println("Creating the greedy matrix took: " + (endTime - startTime) + " msec.");
+        }
         return gameGreedyDistance;
     }
 
@@ -134,7 +139,7 @@ public class Tree {
             umpireScheduleByRound[umpireId][startRoundIndex] = gameId;
             gameUmpireLookup[gameId] = umpireId;
         });
-        System.out.println("Fixed round " + startRoundIndex);
+        //System.out.println("Fixed round " + startRoundIndex);
     }
 
     // ********** EVALUATION

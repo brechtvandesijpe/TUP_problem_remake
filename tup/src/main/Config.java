@@ -10,6 +10,9 @@ public class Config {
 
     public static String FILE_NAME;
 
+    // SETTINGS DEBUGGING
+    public static boolean DEBUG_TREE = false;
+
     // PARAMETERS
     public static int INFEASIBLE_WEIGHT = 10;
     public static int UNASSIGNED = -99999;
@@ -18,4 +21,6 @@ public class Config {
     public static String reset = "\u001B[0m";
     public static String green = "\u001B[32;1m";
     public static String red = "\u001B[31;1m";
+    public static String blue = "\u001B[34;1m";
+    public static String purple = "\u001B[35;1m";
 }
