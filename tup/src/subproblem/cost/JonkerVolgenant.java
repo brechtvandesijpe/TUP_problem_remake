@@ -1,4 +1,4 @@
-package problem;
+package subproblem.cost;
 
 /**
  * Implements the LAPJV algorithm.
