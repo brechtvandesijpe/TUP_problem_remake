@@ -138,7 +138,6 @@ public class Tree {
 
                 //System.out.println("PartialDist: " + partialDistance + ", upperb: " + upperbound);
                 if (partialDistance + lowerbound >= upperbound) {
-                    System.out.println("teeeeeeeeeeest");
                     unassign(a, umpire);
                     continue; // Prune the branch
                 }

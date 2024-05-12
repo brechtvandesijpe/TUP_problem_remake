@@ -37,5 +37,4 @@ public class LowerboundCalculator {
         return roundLBs[round][endRound];
     }
 
-
 }
