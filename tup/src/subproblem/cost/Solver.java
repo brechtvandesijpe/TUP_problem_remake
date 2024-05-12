@@ -1,4 +1,6 @@
 package subproblem.cost;
 
-public class Solver {
+import subproblem.match.Match;
+
+public class Solver implements Match {
 }

@@ -1,5 +1,7 @@
 package subproblem.cost;
 
+import subproblem.match.Match;
+
 import java.util.Arrays;
 
 /**
@@ -40,7 +42,7 @@ import java.util.Arrays;
  * Requirements: JDK 1.5.0_01 or better.
  * [Created in Eclipse 3.1M6 (www.eclipse.org).]
  */
-public class Hungarian {
+public class Hungarian implements Match {
 
 
     public int[][] getOptimalMatch(int[][] costMatrix) {

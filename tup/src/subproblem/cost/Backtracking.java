@@ -1,4 +1,6 @@
 package subproblem.cost;
 
-public class Backtracking {
+import subproblem.match.Match;
+
+public class Backtracking implements Match {
 }

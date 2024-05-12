@@ -1,5 +1,7 @@
 package subproblem.cost;
 
+import subproblem.match.Match;
+
 /**
  * Implements the LAPJV algorithm.
  * <p>
@@ -9,10 +11,9 @@ package subproblem.cost;
  * </p>
  *
  * @author Johannes Schindelin
- *
  */
 
-public class JonkerVolgenant {
+public class JonkerVolgenant implements Match {
 
     public int[][] getOptimalMatch(int[][] costMatrix) {
         final int n = costMatrix.length;
