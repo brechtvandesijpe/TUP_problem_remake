@@ -3,7 +3,6 @@ package problem;
 import model.Game;
 import model.Instance;
 import java.util.Arrays;
-
 import static main.Config.*;
 import static model.Instance.getTravelDistanceBetween;
 
@@ -62,4 +61,18 @@ public class LowerboundMatch {
         int gameId = firstGameOfRound + umpireId;
         return Instance.getGame(gameId);
     }
+
+    public int calculateMatchingDistance(int[][] result, int currentRoundIndex) {
+        return Arrays.stream(result).mapToInt(assignment -> {
+            Game current = getGame(currentRoundIndex, assignment[0]);
+            int nextRound = currentRoundIndex + 1;
+            Game next = getGame(nextRound, assignment[1]);
+            int interGameDistance = calculateGameDistance(current, next);
+            if (DEBUG_LOWERBOUND_MATCHER) {
+                System.out.println("Inter game distance: {" + current + "," + next + "}" + "= " + interGameDistance);
+            }
+            return interGameDistance;
+        }).sum();
+    }
+
 }

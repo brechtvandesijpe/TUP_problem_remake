@@ -18,7 +18,7 @@ public class LowerboundCalculator {
 
     // Algorithm 2.2: Lower bounds computation algorithm
     public void calculateLBs() {
-        System.out.println("test");
+       // System.out.println("test");
         lowerboundMatch.generateCostArray(1);
         // Solving subproblems with size [2, R-1]
         for (int k = 1; k <= NUM_ROUNDS - 1; k++) {

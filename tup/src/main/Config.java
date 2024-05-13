@@ -24,6 +24,7 @@ public class Config {
     public static boolean DEBUG_PRUNER = false;
     public static boolean DEBUG_LOWERBOUND_CALCULATOR = false;
     public static boolean DEBUG_COSTARRAY = true;
+    public static boolean DEBUG_LOWERBOUND_MATCHER = true;
 
     // PARAMETERS
     public static int INFEASIBLE_WEIGHT = 10;
