@@ -1,6 +1,7 @@
 package main;
 
 import problem.BranchStrategy;
+import subproblem.match.MatchType;
 
 public class Config {
     public static int Q1;
@@ -16,11 +17,13 @@ public class Config {
     public static boolean LOWERBOUND_ENABLED = true;
     public static boolean ASYNC = true;
     public static BranchStrategy BRANCH_STRATEGY = BranchStrategy.BFS_DISTANCE;
+    public static MatchType MATCH_TYPE = MatchType.JONKER_VOLGENANT;
 
     // SETTINGS DEBUGGING
     public static boolean DEBUG_TREE = false;
     public static boolean DEBUG_PRUNER = false;
     public static boolean DEBUG_LOWERBOUND_CALCULATOR = false;
+    public static boolean DEBUG_COSTARRAY = true;
 
     // PARAMETERS
     public static int INFEASIBLE_WEIGHT = 10;
