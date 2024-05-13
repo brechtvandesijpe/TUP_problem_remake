@@ -12,11 +12,9 @@ import static subproblem.match.MatchFactory.createMatchAlgorithm;
 
 public class LowerboundMatch {
     private final int[][] costArray;
-    private final Instance instance;
     private final int MAX = 999999;
 
-    public LowerboundMatch(Instance instance) {
-        this.instance = instance;
+    public LowerboundMatch() {
         this.costArray = new int[NUM_UMPIRES][NUM_UMPIRES];
     }
 
@@ -92,5 +90,4 @@ public class LowerboundMatch {
             return interGameDistance;
         }).sum();
     }
-
 }
