@@ -252,4 +252,8 @@ public class Tree {
     public int getTotalDistance() {
         return totalDistance;
     }
+
+    public LowerboundCalculator getLowerboundCalculator() {
+        return lowerboundCalculator;
+    }
 }

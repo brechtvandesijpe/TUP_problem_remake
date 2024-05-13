@@ -23,8 +23,9 @@ public class Config {
     public static boolean DEBUG_TREE = false;
     public static boolean DEBUG_PRUNER = false;
     public static boolean DEBUG_LOWERBOUND_CALCULATOR = false;
-    public static boolean DEBUG_COSTARRAY = true;
-    public static boolean DEBUG_LOWERBOUND_MATCHER = true;
+    public static boolean DEBUG_COSTARRAY = false;
+    public static boolean DEBUG_LOWERBOUND_MATCHER = false;
+    public static boolean MATCH_LOWERBOUND = true;
 
     // PARAMETERS
     public static int INFEASIBLE_WEIGHT = 10;

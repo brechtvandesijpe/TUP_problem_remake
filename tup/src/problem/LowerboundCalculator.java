@@ -2,8 +2,9 @@ package problem;
 
 import model.Instance;
 
-import static main.Config.DEBUG_LOWERBOUND_CALCULATOR;
-import static main.Config.NUM_ROUNDS;
+import java.util.stream.IntStream;
+
+import static main.Config.*;
 
 public class LowerboundCalculator {
     private final Instance instance;
@@ -18,7 +19,16 @@ public class LowerboundCalculator {
 
     // Algorithm 2.2: Lower bounds computation algorithm
     public void calculateLBs() {
-       // System.out.println("test");
+        // System.out.println("test");
+        // Calculate initial lower bounds for all pairs of rounds using the values of the matchings between every two consecutive rounds
+        if (MATCH_LOWERBOUND) {
+            IntStream.range(0, NUM_ROUNDS - 1).forEach(roundIndex -> {
+                int newLowerBoundValue = lowerboundMatch.calculateRoundMatching(roundIndex);
+                int nextRound = roundIndex + 1;
+                IntStream.rangeClosed(0, roundIndex).forEach(i -> IntStream.rangeClosed(nextRound, NUM_ROUNDS - 1).forEach(j -> roundLBs[i][j] = Math.max(roundLBs[i][j], roundLBs[i][roundIndex] + newLowerBoundValue + roundLBs[roundIndex][j])));
+            });
+        }
+
         lowerboundMatch.generateCostArray(1);
         // Solving subproblems with size [2, R-1]
         for (int k = 1; k <= NUM_ROUNDS - 1; k++) {
@@ -41,4 +51,15 @@ public class LowerboundCalculator {
         return roundLBs[round][endRound];
     }
 
+    public Instance getInstance() {
+        return instance;
+    }
+
+    public int[][] getRoundLBs() {
+        return roundLBs;
+    }
+
+    public LowerboundMatch getLowerboundMatch() {
+        return lowerboundMatch;
+    }
 }

@@ -2,9 +2,12 @@ package problem;
 
 import model.Game;
 import model.Instance;
+import subproblem.match.Match;
+
 import java.util.Arrays;
 import static main.Config.*;
 import static model.Instance.getTravelDistanceBetween;
+import static subproblem.match.MatchFactory.createMatchAlgorithm;
 
 
 public class LowerboundMatch {
@@ -15,6 +18,21 @@ public class LowerboundMatch {
     public LowerboundMatch(Instance instance) {
         this.instance = instance;
         this.costArray = new int[NUM_UMPIRES][NUM_UMPIRES];
+    }
+
+    public int calculateRoundMatching(int roundIndex) {
+        // Calculate matching distance based on the result of cost array for the roundIndex
+        generateCostArray(roundIndex);
+        return calculateMatchingDistance(solveAssignmentProblem(), roundIndex);
+    }
+
+    public int[][] solveAssignmentProblem() {
+        Match match = createMatchAlgorithm(MATCH_TYPE);
+        int[][] ret = match.getOptimalMatch(costArray);
+        if (DEBUG_LOWERBOUND_MATCHER) {
+            System.out.println("Return: " + Arrays.deepToString(ret));
+        }
+        return ret;
     }
 
     public void generateCostArray(int roundIndex) {
