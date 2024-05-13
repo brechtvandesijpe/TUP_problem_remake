@@ -176,176 +176,11 @@ fn pretty_print(
     }
 }
 
-// fn calculate_lowerbound(
-//     dist: Arc<Vec<Vec<i128>>>,
-//     rounds_lbs: Arc<Mutex<Vec<Vec<i128>>>>,
-//     max_rounds: i32,
-//     q1: i32,
-//     q2: i32,
-//     model: Model,
-// ) {
-//     for k in 1..max_rounds {
-//         let r: i32 = max_rounds - 1 - k;
-//         println!("LB calculation of start = {}, end = {}", r+1, r+k+1);
-
-//         let mut source = Node::new(
-//             None,
-//             model.get_round_ints(r + 1).clone(),
-//             &dist,
-//         );
-
-//         source = source.set_round_index(r + 1);
-
-//         let mut upperbound: i128 = 999999;
-//         let mut best_solution: Option<Node> = None;
-
-//         let mut nodes: Vec<Node> = Vec::new();
-//         nodes.push(source);
-
-//         // START BRANCH AND BOUND
-//         while nodes.len() > 0 {
-//             // POP NEW STATE FROM STACK
-//             let current_state = nodes.pop().unwrap();
-            
-//             // EVALUATE
-//             let val = current_state.score;
-            
-//             if val < upperbound {
-//                 if (current_state.round_index as usize) == (r + k + 1) as usize {
-//                     upperbound = val;
-//                     best_solution = Some(current_state.clone());
-//                 } else {
-//                     // ADD ALL FEASIBLE CHILDREN TO EXPLORE
-//                     let options = model.get_round_ints(current_state.round_index + 1);
-//                     let children = current_state.generate_children_lowerbound(q1, q2, options, upperbound, &rounds_lbs.lock().unwrap(), r + k + 1);
-                    
-//                     // CREATE AND ADD ALL CHILDREN
-//                     if !children.is_empty() {
-//                         for child in children {
-//                             let new_node = Node::new(
-//                                 Some(Box::new(current_state.clone())),
-//                                 child.clone(),
-//                                 &dist,
-//                             );
-//                             nodes.push(new_node);
-//                         }
-//                     }
-//                 }
-//             }
-//         }
-
-//         // println!("{:?}", best_solution.unwrap());
-
-//         for r1 in (0..=r).rev() {
-//             for r2 in (r + k)..max_rounds {
-//                 let mut data = rounds_lbs.lock().unwrap();
-//                 let val_1: i128 = data[r1 as usize][r2 as usize].borrow_mut().clone();
-//                 let val_2: i128 = data[r1 as usize][r as usize].borrow().clone() + upperbound;
-//                 let val_3: i128 = data[(r + k) as usize][r2 as usize].borrow_mut().clone();
-//                 let best_val = std::cmp::max(val_1, std::cmp::max(val_2, val_3));
-//                 *data[r1 as usize][r2 as usize].borrow_mut() = best_val;
-//                 pretty_print(&data);
-//             }
-//         }
-
-//     }
-// }
-
-// pub fn branch_and_bound(
-//     file_name: &str,
-//     q1: i32,
-//     q2: i32
-// ) -> Result<i128, &'static str> {
-//     let data = read_data(format!("resources/{}.txt", file_name).as_str()).unwrap();
-//     let model = Model::new(&data);
-
-//     let initial = model.get_round_ints(1);
-
-//     let mut upperbound: i128 = 999999;
-//     let mut best_solution: Option<Node> = None;
-
-//     let source = Node::new(
-//         None,
-//         initial.clone(),
-//         &data.dist,
-//     );
-    
-//     // ADD SOURCE NODE TO STACK
-//     let mut nodes: Vec<Node> = Vec::new();
-//     nodes.push(source.clone());
-
-//     // START LWOERBOUND_THREAD
-//     let lowerbound: Arc<Mutex<Vec<Vec<i128>>>> = Arc::new(Mutex::new(vec![vec![0; model.num_rounds as usize]; model.num_rounds as usize]));
-//     let lowerbound_clone:Arc<Mutex<Vec<Vec<i128>>>> = Arc::clone(&lowerbound);
-
-//     let dist_clone = Arc::new(data.dist.clone());
-//     let dist_clone_lb = Arc::clone(&dist_clone);
-
-//     let num_rounds = model.num_rounds;
-//     let model_clone = model.clone();
-//     let handle = thread::spawn(
-//         move || {
-//             calculate_lowerbound(
-//                 dist_clone_lb,
-//                 lowerbound_clone,
-//                 num_rounds,
-//                 q1,
-//                 q2,
-//                 model_clone,
-//             )
-//         }
-//     );
-
-//     handle.join().unwrap();
-//     pretty_print(&lowerbound.lock().unwrap());
-
-//     // START BRANCH AND BOUND
-//     while nodes.len() > 0 {
-//         // POP NEW STATE FROM STACK
-//         let current_state = nodes.pop().unwrap();
-        
-//         // EVALUATE
-//         let val = current_state.score;
-//         let lb_val = lowerbound.lock().unwrap().clone();
-        
-//         if val < upperbound {
-//             if (current_state.round_index as usize) < num_rounds as usize {
-//                 // ADD ALL FEASIBLE CHILDREN TO EXPLORE
-//                 let children = current_state.generate_children(q1, q2, model.get_round_ints(current_state.round_index + 1), upperbound, num_rounds, &lb_val);
-
-//                 // CREATE AND ADD ALL CHILDREN
-//                 if !children.is_empty() {
-//                     for child in children {
-//                         let new_node = Node::new(
-//                             Some(Box::new(current_state.clone())),
-//                             child.clone(),
-//                             &data.dist,
-//                         );
-//                         nodes.push(new_node);
-//                     }
-//                 }
-//             } else {
-//                 upperbound = val;
-//                 let lb: &i128 = &lowerbound.lock().unwrap()[0][(num_rounds - 1) as usize];
-//                 let gap = (upperbound as f64 - *lb as f64) / upperbound as f64;
-//                 // println!("lowerbound = {}, upperbound = {}, gap = {}", lb, upperbound, gap);
-//                 best_solution = Some(current_state.clone());
-//             }
-//         }
-//     }
-    
-//     if let Some(best_solution) = best_solution {
-//         best_solution.export(file_name);
-//         return Ok(best_solution.score);
-//     }
-
-//     Err("No solution found")
-// }
-
 #[derive(Clone)]
 pub struct Node<'a> {
     parent: Option<Box<Node<'a>>>,
-    assignment: (i32, i32),
+    game: &'a Game,
+    pub umpire_index: i32,
     pub score: i128,
     pub round_index: i32,
     dist: &'a Vec<Vec<i128>>,
@@ -355,18 +190,20 @@ pub struct Node<'a> {
 impl<'a> Node<'a> {
     pub fn new(
         parent: Option<Box<Node<'a>>>,
-        assignment: (i32, i32),
+        game: &'a Game,
+        umpire_index: i32,
         dist: &'a Vec<Vec<i128>>,
+        previous_team_score: i128,
     ) -> Self {
         let mut visited_teams = vec![false; dist.len()];
-        visited_teams[(assignment.0 - 1) as usize] = true;
+        visited_teams[(game.home_player - 1) as usize] = true;
 
         let mut round_index = 1;
-        let mut score: i128 = 0;
+        let mut score: i128 = previous_team_score;
 
         if let Some(parent) = &parent {
             round_index += parent.round_index;
-            score += parent.score + dist[(parent.assignment.0 - 1) as usize][(assignment.0 - 1) as usize];
+            score += parent.score + dist[(parent.game.home_player - 1) as usize][(game.home_player - 1) as usize];
             
             for i in 0..visited_teams.len() {
                 if parent.visited_teams[i] == true {
@@ -377,12 +214,167 @@ impl<'a> Node<'a> {
 
         Self {
             parent,
-            assignment,
+            game,
+            umpire_index,
             score,
             round_index,
             dist,
             visited_teams,
         }
+    }
+
+    pub fn is_visited(
+        &self,
+        new_game: &Game,
+    ) -> bool {
+        if self.game.home_player == new_game.home_player {
+            return true;
+        }
+
+        false
+    }
+
+    pub fn is_officiated(
+        &self,
+        new_game: &Game,
+    ) -> bool {
+        if self.game.home_player == new_game.home_player || self.game.home_player == new_game.out_player || 
+            self.game.out_player == new_game.home_player || self.game.out_player == new_game.out_player {
+            return true;
+        }
+
+        false
+    }
+
+    pub fn is_previous(
+        &self,
+        new_assignment: &Game
+    ) -> bool {
+        if self.game.home_player == new_assignment.home_player && self.game.out_player == new_assignment.out_player {
+            return true;
+        }
+
+        false
+    }
+
+    pub fn check_q1(
+        &self,
+        stop_round: i32,
+        new_assignment: &Game,
+    ) -> bool {
+        let mut result = true;
+
+        if stop_round < self.round_index {
+            if let Some(parent) = &self.parent {
+                result = parent.check_q1(stop_round, new_assignment);
+            };
+        }
+        
+        let is_visited = self.is_visited(new_assignment);
+        result && !is_visited
+    }
+
+    pub fn check_q2(
+        &self,
+        stop_round: i32,
+        new_assignment: &Game,
+    ) -> bool {
+        let mut result = true;
+        
+        if stop_round < self.round_index {
+            if let Some(parent) = &self.parent {
+                result = parent.check_q2(stop_round, new_assignment);
+            }
+        }
+        
+        let is_officiated = self.is_officiated(new_assignment);
+        result && !is_officiated
+    }
+
+    pub fn check_global(
+        &self,
+        num_rounds_left: i32,
+    ) -> bool {
+        let mut counter = 0;
+
+        for location in &self.visited_teams {
+            if !location {
+                counter += 1;
+            }
+        }
+
+        counter <= num_rounds_left
+    }
+
+    pub fn check_previous(
+        &self,
+        new_assignment: &Game,
+    ) -> bool {
+        let mut result = true;
+        if let Some(parent) = &self.parent {
+            result = parent.check_previous(new_assignment);
+        };
+        
+        let is_previous = self.is_previous(new_assignment);
+        result && !is_previous
+    }
+
+    pub fn pre_evaluate(
+        &self,
+        new_assignment: &Game,
+        upperbound: i128,
+    ) -> bool {
+        let mut score: i128 = self.score;
+
+        if let Some(parent) = &self.parent {
+            let from: i32 = parent.game.home_player - 1;
+            let to: i32 = new_assignment.home_player - 1;
+            score += self.dist[from as usize][to as usize];
+        }
+
+        score < upperbound
+    }
+
+    pub fn generate_children(
+        &self,
+        q1: i32,
+        q2: i32,
+        options: &'a Vec<&Game>,
+        upperbound: i128,
+    ) -> Vec<&Game> {
+        let mut result = Vec::new();
+
+        let num_checks_q1 = q1 - 2;
+        let stop_round_q1 = self.round_index - num_checks_q1;
+
+        let num_checks_q2 = q2 - 2;
+        let stop_round_q2 = self.round_index - num_checks_q2;
+
+        for option in options {
+            let is_better = self.pre_evaluate(option, upperbound);
+            if !is_better {
+                continue;
+            }
+
+            let is_q1_feasible = self.check_q1(stop_round_q1, option);
+            if !is_q1_feasible {
+                continue;
+            }
+
+            let is_q2_feasible = self.check_q2(stop_round_q2, option);
+            if !is_q2_feasible {
+                continue;
+            }
+
+            let is_previous_feasible = self.check_previous(option);
+            if !is_previous_feasible {
+                continue;
+            }
+
+            result.push(*option);
+        }
+
+        result
     }
 }
 
@@ -393,9 +385,9 @@ impl<'a> std::fmt::Debug for Node<'a> {
     ) -> std::fmt::Result {
         if let Some(parent) = &self.parent {
             write!(f, r#"{:?}
-{:?} {}"#, parent, self.assignment, self.score)
+({:?},{:?}) {}"#, parent, self.game.home_player, self.game.out_player, self.score)
         } else {
-            write!(f, "{:?} {:?}", self.assignment, self.score)
+            write!(f, "({:?},{:?}) {:?}", self.game.home_player, self.game.out_player, self.score)
         }
     }
 }
@@ -407,9 +399,9 @@ impl<'a> std::fmt::Display for Node<'a> {
     ) -> std::fmt::Result {
         if let Some(parent) = &self.parent {
             write!(f, r#"{}
-{:?}"#, parent, self.new_assignments)
+({:?},{:?})"#, parent, self.game.home_player, self.game.out_player)
         } else {
-            write!(f, "{:?}", self.new_assignments)
+            write!(f, "({:?},{:?})", self.game.home_player, self.game.out_player)
         }
     }
 }

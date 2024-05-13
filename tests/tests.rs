@@ -1,11 +1,7 @@
 #[cfg(test)]
 mod tests {
     use TUP_problem_remake::algorithm::Node;
-
-    #[test]
-    pub fn sanity() {
-        assert!(true);
-    }
+    use TUP_problem_remake::algorithm::Game;
 
     #[test]
     pub fn is_previous() {
@@ -20,49 +16,53 @@ mod tests {
             vec![1, 1, 1, 1, 1, 1, 1, 0],
         ];
 
+        let game = Game::new(1, 2);
         let round_one = Node::new(
             None,
-            vec![(2, 4), (3, 6), (1, 7), (5, 8)],
+            &game,
+            1,
             &dist,
+            0,
         );
 
+        assert!(round_one.is_previous(&Game::new(1, 2)));
+        assert!(!round_one.is_previous(&Game::new(2, 1)));
+
+        let game = Game::new(3, 4);
         let round_two = Node::new(
-            Some(Box::new(round_one.clone())),
-            vec![(5, 7), (4, 1), (6, 8), (3, 2)],
+            Some(Box::new(round_one)),
+            &game,
+            1,
             &dist,
+            0,
         );
 
-        assert!(!round_one.is_previous(&vec![(12, 12), (12, 12), (12, 12), (12, 12)]));
+        assert!(round_two.is_previous(&Game::new(3, 4)));
+        assert!(!round_two.is_previous(&Game::new(4, 3)));
 
-        assert!(!round_one.is_previous(&vec![(12, 4), (12, 12), (12, 12), (12, 12)]));
-        assert!(!round_one.is_previous(&vec![(2, 12), (12, 12), (12, 12), (12, 12)]));
-        assert!(!round_one.is_previous(&vec![(12, 12), (12, 6), (12, 12), (12, 12)]));
-        assert!(!round_one.is_previous(&vec![(12, 12), (3, 12), (12, 12), (12, 12)]));
-        assert!(!round_one.is_previous(&vec![(12, 12), (12, 12), (12, 7), (12, 12)]));
-        assert!(!round_one.is_previous(&vec![(12, 12), (12, 12), (1, 12), (12, 12)]));
-        assert!(!round_one.is_previous(&vec![(12, 12), (12, 12), (12, 12), (12, 8)]));
-        assert!(!round_one.is_previous(&vec![(12, 12), (12, 12), (12, 12), (5, 12)]));
+        let game = Game::new(5, 6);
+        let round_three = Node::new(
+            Some(Box::new(round_two)),
+            &game,
+            1,
+            &dist,
+            0,
+        );
 
-        assert!(round_one.is_previous(&vec![(2, 4), (12, 12), (12, 12), (12, 12)]));
-        assert!(round_one.is_previous(&vec![(12, 12), (3, 6), (12, 12), (12, 12)]));
-        assert!(round_one.is_previous(&vec![(12, 12), (12, 12), (1, 7), (12, 12)]));
-        assert!(round_one.is_previous(&vec![(12, 12), (12, 12), (12, 12), (5, 8)]));
+        assert!(round_three.is_previous(&Game::new(5, 6)));
+        assert!(!round_three.is_previous(&Game::new(6, 5)));
 
-        assert!(!round_two.is_previous(&vec![(12, 12), (12, 12), (12, 12), (12, 12)]));
-
-        assert!(!round_two.is_previous(&vec![(12, 7), (12, 12), (12, 12), (12, 12)]));
-        assert!(!round_two.is_previous(&vec![(5, 12), (12, 12), (12, 12), (12, 12)]));
-        assert!(!round_two.is_previous(&vec![(12, 12), (12, 1), (12, 12), (12, 12)]));
-        assert!(!round_two.is_previous(&vec![(12, 12), (4, 12), (12, 12), (12, 12)]));
-        assert!(!round_two.is_previous(&vec![(12, 12), (12, 12), (12, 8), (12, 12)]));
-        assert!(!round_two.is_previous(&vec![(12, 12), (12, 12), (6, 12), (12, 12)]));
-        assert!(!round_two.is_previous(&vec![(12, 12), (12, 12), (12, 12), (12, 2)]));
-        assert!(!round_two.is_previous(&vec![(12, 12), (12, 12), (12, 12), (3, 12)]));
-
-        assert!(round_two.is_previous(&vec![(5, 7), (12, 12), (12, 12), (12, 12)]));
-        assert!(round_two.is_previous(&vec![(12, 12), (4, 1), (12, 12), (12, 12)]));
-        assert!(round_two.is_previous(&vec![(12, 12), (12, 12), (6, 8), (12, 12)]));
-        assert!(round_two.is_previous(&vec![(12, 12), (12, 12), (12, 12), (3, 2)]));
+        let game = Game::new(7, 8);
+        let round_four = Node::new(
+            Some(Box::new(round_three)),
+            &game,
+            1,
+            &dist,
+            0,
+        );
+        
+        assert!(round_four.is_previous(&Game::new(7, 8)));
+        assert!(!round_four.is_previous(&Game::new(8, 7)));
     }
 
     #[test]
@@ -78,87 +78,50 @@ mod tests {
             vec![1, 1, 1, 1, 1, 1, 1, 0],
         ];
 
+        let game = Game::new(1, 2);
         let round_one = Node::new(
             None,
-            vec![(1, 5), (4, 8), (6, 2), (7, 3)],
+            &game,
+            1,
             &dist,
+            0,
         );
 
+        let game = Game::new(3, 4);
         let round_two = Node::new(
-            Some(Box::new(round_one.clone())),
-            vec![(2, 8), (5, 3), (4, 7), (1, 6)],
+            Some(Box::new(round_one)),
+            &game,
+            1,
             &dist,
+            0,
         );
 
+        let game = Game::new(5, 6);
         let round_three = Node::new(
-            Some(Box::new(round_two.clone())),
-            vec![(5, 6), (1, 4), (3, 8), (2, 7)],
+            Some(Box::new(round_two)),
+            &game,
+            1,
             &dist,
+            0,
         );
 
+        let game = Game::new(7, 8);
         let round_four = Node::new(
-            Some(Box::new(round_three.clone())),
-            vec![(3, 7), (8, 2), (5, 4), (6, 1)],
+            Some(Box::new(round_three)),
+            &game,
+            1,
             &dist,
+            0,
         );
 
-        assert!(!round_one.check_previous(&vec![(1, 5), (12, 12), (12, 12), (12, 12)]));
-        assert!(!round_one.check_previous(&vec![(12, 12), (4, 8), (12, 12), (12, 12)]));
-        assert!(!round_one.check_previous(&vec![(12, 12), (12, 12), (6, 2), (12, 12)]));
-        assert!(!round_one.check_previous(&vec![(12, 12), (12, 12), (12, 12), (7, 3)]));
-        assert!(round_one.check_previous(&vec![(2, 8), (5, 3), (4, 7), (1, 6)]));
-        assert!(round_one.check_previous(&vec![(5, 6), (1, 4), (3, 8), (2, 7)]));
-        assert!(round_one.check_previous(&vec![(3, 7), (8, 2), (5, 4), (6, 1)]));
-
-        assert!(!round_two.check_previous(&vec![(1, 5), (12, 12), (12, 12), (12, 12)]));
-        assert!(!round_two.check_previous(&vec![(12, 12), (4, 8), (12, 12), (12, 12)]));
-        assert!(!round_two.check_previous(&vec![(12, 12), (12, 12), (6, 2), (12, 12)]));
-        assert!(!round_two.check_previous(&vec![(1, 5), (4, 8), (6, 2), (7, 3)]));
-        assert!(!round_two.check_previous(&vec![(2, 8), (12, 12), (12, 12), (12, 12)]));
-        assert!(!round_two.check_previous(&vec![(12, 12), (5, 3), (12, 12), (12, 12)]));
-        assert!(!round_two.check_previous(&vec![(12, 12), (12, 12), (4, 7), (12, 12)]));
-        assert!(!round_two.check_previous(&vec![(12, 12), (12, 12), (12, 12), (1, 6)]));
-        assert!(!round_two.check_previous(&vec![(2, 8), (5, 3), (4, 7), (1, 6)]));
-        assert!(round_two.check_previous(&vec![(5, 6), (1, 4), (3, 8), (2, 7)]));
-        assert!(round_two.check_previous(&vec![(3, 7), (8, 2), (5, 4), (6, 1)]));
-        
-        assert!(!round_three.check_previous(&vec![(2, 8), (12, 12), (12, 12), (12, 12)]));
-        assert!(!round_three.check_previous(&vec![(12, 12), (5, 3), (12, 12), (12, 12)]));
-        assert!(!round_three.check_previous(&vec![(12, 12), (12, 12), (4, 7), (12, 12)]));
-        assert!(!round_three.check_previous(&vec![(12, 12), (12, 12), (12, 12), (1, 6)]));
-        assert!(!round_three.check_previous(&vec![(1, 5), (4, 8), (6, 2), (7, 3)]));
-        assert!(!round_three.check_previous(&vec![(2, 8), (12, 12), (12, 12), (12, 12)]));
-        assert!(!round_three.check_previous(&vec![(12, 12), (5, 3), (12, 12), (12, 12)]));
-        assert!(!round_three.check_previous(&vec![(12, 12), (12, 12), (4, 7), (12, 12)]));
-        assert!(!round_three.check_previous(&vec![(12, 12), (12, 12), (12, 12), (1, 6)]));
-        assert!(!round_three.check_previous(&vec![(2, 8), (5, 3), (4, 7), (1, 6)]));
-        assert!(!round_three.check_previous(&vec![(5, 6), (12, 12), (12, 12), (12, 12)]));
-        assert!(!round_three.check_previous(&vec![(12, 12), (1, 4), (12, 12), (12, 12)]));
-        assert!(!round_three.check_previous(&vec![(12, 12), (12, 12), (3, 8), (12, 12)]));
-        assert!(!round_three.check_previous(&vec![(12, 12), (12, 12), (12, 12), (2, 7)]));
-        assert!(!round_three.check_previous(&vec![(5, 6), (1, 4), (3, 8), (2, 7)]));
-        assert!(round_three.check_previous(&vec![(3, 7), (8, 2), (5, 4), (6, 1)]));
-        
-        assert!(!round_four.check_previous(&vec![(2, 8), (12, 12), (12, 12), (12, 12)]));
-        assert!(!round_four.check_previous(&vec![(12, 12), (5, 3), (12, 12), (12, 12)]));
-        assert!(!round_four.check_previous(&vec![(12, 12), (12, 12), (4, 7), (12, 12)]));
-        assert!(!round_four.check_previous(&vec![(12, 12), (12, 12), (12, 12), (1, 6)]));
-        assert!(!round_four.check_previous(&vec![(1, 5), (4, 8), (6, 2), (7, 3)]));
-        assert!(!round_four.check_previous(&vec![(2, 8), (12, 12), (12, 12), (12, 12)]));
-        assert!(!round_four.check_previous(&vec![(12, 12), (5, 3), (12, 12), (12, 12)]));
-        assert!(!round_four.check_previous(&vec![(12, 12), (12, 12), (4, 7), (12, 12)]));
-        assert!(!round_four.check_previous(&vec![(12, 12), (12, 12), (12, 12), (1, 6)]));
-        assert!(!round_four.check_previous(&vec![(2, 8), (5, 3), (4, 7), (1, 6)]));
-        assert!(!round_four.check_previous(&vec![(5, 6), (12, 12), (12, 12), (12, 12)]));
-        assert!(!round_four.check_previous(&vec![(12, 12), (1, 4), (12, 12), (12, 12)]));
-        assert!(!round_four.check_previous(&vec![(12, 12), (12, 12), (3, 8), (12, 12)]));
-        assert!(!round_four.check_previous(&vec![(12, 12), (12, 12), (12, 12), (2, 7)]));
-        assert!(!round_four.check_previous(&vec![(5, 6), (1, 4), (3, 8), (2, 7)]));
-        assert!(!round_four.check_previous(&vec![(3, 7), (12, 12), (12, 12), (12, 12)]));
-        assert!(!round_four.check_previous(&vec![(12, 12), (8, 2), (12, 12), (12, 12)]));
-        assert!(!round_four.check_previous(&vec![(12, 12), (12, 12), (5, 4), (12, 12)]));
-        assert!(!round_four.check_previous(&vec![(12, 12), (12, 12), (12, 12), (6, 1)]));
-        assert!(!round_four.check_previous(&vec![(3, 7), (8, 2), (5, 4), (6, 1)]));
+        assert!(!round_four.check_previous(&Game::new(1, 2)));
+        assert!(round_four.check_previous(&Game::new(2, 1)));
+        assert!(!round_four.check_previous(&Game::new(3, 4)));
+        assert!(round_four.check_previous(&Game::new(4, 3)));
+        assert!(!round_four.check_previous(&Game::new(5, 6)));
+        assert!(round_four.check_previous(&Game::new(6, 5)));
+        assert!(!round_four.check_previous(&Game::new(7, 8)));
+        assert!(round_four.check_previous(&Game::new(8, 7)));
     }
 
     #[test]
@@ -174,25 +137,65 @@ mod tests {
             vec![1, 1, 1, 1, 1, 1, 1, 0],
         ];
 
+        let game = Game::new(1, 2);
         let round_one = Node::new(
             None,
-            vec![(2, 4), (3, 6), (1, 7), (5, 8)],
+            &game,
+            1,
             &dist,
+            0,
         );
 
+        assert!(round_one.is_visited(&Game::new(1, 2)));
+        assert!(!round_one.is_visited(&Game::new(2, 1)));
+
+        let game = Game::new(3, 4);
         let round_two = Node::new(
-            Some(Box::new(round_one.clone())),
-            vec![(5, 7), (4, 1), (6, 8), (3, 2)],
+            Some(Box::new(round_one)),
+            &game,
+            1,
             &dist,
+            0,
         );
 
-        assert!(round_one.is_visited(&vec![(2, 12), (12, 12), (12, 12), (12, 12)]));
-        assert!(!round_one.is_visited(&vec![(5, 12), (12, 12), (12, 12), (12, 12)]));
-        assert!(round_two.is_visited(&vec![(5, 12), (12, 12), (12, 12), (12, 12)]));
-        assert!(!round_two.is_visited(&vec![(2, 12), (12, 12), (12, 12), (12, 12)]));
+        assert!(round_two.is_visited(&Game::new(3, 4)));
+        assert!(!round_two.is_visited(&Game::new(4, 3)));
+        assert!(!round_two.is_visited(&Game::new(2, 1)));
+        assert!(!round_two.is_visited(&Game::new(1, 2)));
 
-        assert!(!round_one.is_visited(&vec![(12, 12), (12, 12), (12, 12), (12, 12)]));
-        assert!(!round_two.is_visited(&vec![(12, 12), (12, 12), (12, 12), (12, 12)]));
+        let game = Game::new(5, 6);
+        let round_three = Node::new(
+            Some(Box::new(round_two)),
+            &game,
+            1,
+            &dist,
+            0,
+        );
+
+        assert!(round_three.is_visited(&Game::new(5, 6)));
+        assert!(!round_three.is_visited(&Game::new(6, 5)));
+        assert!(!round_three.is_visited(&Game::new(3, 4)));
+        assert!(!round_three.is_visited(&Game::new(4, 3)));
+        assert!(!round_three.is_visited(&Game::new(2, 1)));
+        assert!(!round_three.is_visited(&Game::new(1, 2)));
+
+        let game = Game::new(7, 8);
+        let round_four = Node::new(
+            Some(Box::new(round_three)),
+            &game,
+            1,
+            &dist,
+            0,
+        );
+
+        assert!(round_four.is_visited(&Game::new(7, 8)));
+        assert!(!round_four.is_visited(&Game::new(8, 7)));
+        assert!(!round_four.is_visited(&Game::new(5, 6)));
+        assert!(!round_four.is_visited(&Game::new(6, 5)));
+        assert!(!round_four.is_visited(&Game::new(3, 4)));
+        assert!(!round_four.is_visited(&Game::new(4, 3)));
+        assert!(!round_four.is_visited(&Game::new(2, 1)));
+        assert!(!round_four.is_visited(&Game::new(1, 2)));
     }
 
     #[test]
@@ -208,109 +211,61 @@ mod tests {
             vec![1, 1, 1, 1, 1, 1, 1, 0],
         ];
 
+        let game = Game::new(1, 2);
         let round_one = Node::new(
             None,
-            vec![(1, 5), (4, 8), (6, 2), (7, 3)],
+            &game,
+            1,
             &dist,
+            0,
         );
 
+        let game = Game::new(3, 4);
         let round_two = Node::new(
             Some(Box::new(round_one)),
-            vec![(2, 8), (5, 3), (4, 7), (1, 6)],
+            &game,
+            1,
             &dist,
+            0,
         );
 
+        let game = Game::new(5, 6);
         let round_three = Node::new(
             Some(Box::new(round_two)),
-            vec![(5, 6), (1, 4), (3, 8), (2, 7)],
+            &game,
+            1,
             &dist,
+            0,
         );
 
+        let game = Game::new(7, 8);
         let round_four = Node::new(
             Some(Box::new(round_three)),
-            vec![(3, 7), (8, 2), (5, 4), (6, 1)],
+            &game,
+            1,
             &dist,
+            0,
         );
 
-        assert!(!round_four.check_q1(1, &vec![(1, 5), (4, 8), (6, 2), (7, 3)]));
-        assert!(!round_four.check_q1(1, &vec![(2, 8), (5, 3), (4, 7), (1, 6)]));
-        assert!(!round_four.check_q1(1, &vec![(5, 6), (1, 4), (3, 8), (2, 7)]));
-        assert!(!round_four.check_q1(1, &vec![(3, 7), (8, 2), (5, 4), (6, 1)]));
+        assert!(round_four.check_q1(-1, &Game::new(2, 1)));
+        assert!(round_four.check_q1(-1, &Game::new(4, 3)));
+        assert!(round_four.check_q1(-1, &Game::new(6, 5)));
+        assert!(round_four.check_q1(-1, &Game::new(8, 7)));
 
-        assert!(round_four.check_q1(2, &vec![(1, 5), (4, 8), (6, 2), (7, 3)]));
-        assert!(!round_four.check_q1(2, &vec![(2, 8), (5, 3), (4, 7), (1, 6)]));
-        assert!(!round_four.check_q1(2, &vec![(5, 6), (1, 4), (3, 8), (2, 7)]));
-        assert!(!round_four.check_q1(2, &vec![(3, 7), (8, 2), (5, 4), (6, 1)]));
-        
-        assert!(round_four.check_q1(3, &vec![(1, 5), (4, 8), (6, 2), (7, 3)]));
-        assert!(round_four.check_q1(3, &vec![(2, 8), (5, 3), (4, 7), (1, 6)]));
-        assert!(!round_four.check_q1(3, &vec![(5, 6), (1, 4), (3, 8), (2, 7)]));
-        assert!(!round_four.check_q1(3, &vec![(3, 7), (8, 2), (5, 4), (6, 1)]));
-        
-        assert!(round_four.check_q1(4, &vec![(1, 5), (4, 8), (6, 2), (7, 3)]));
-        assert!(round_four.check_q1(4, &vec![(2, 8), (5, 3), (4, 7), (1, 6)]));
-        assert!(round_four.check_q1(4, &vec![(5, 6), (1, 4), (3, 8), (2, 7)]));
-        assert!(!round_four.check_q1(4, &vec![(3, 7), (8, 2), (5, 4), (6, 1)]));
-    }
+        assert!(round_four.check_q1(0, &Game::new(2, 1)));
+        assert!(round_four.check_q1(0, &Game::new(4, 3)));
+        assert!(round_four.check_q1(0, &Game::new(6, 5)));
+        assert!(round_four.check_q1(0, &Game::new(8, 7)));
 
-    #[test]
-    pub fn q1_constraint_sub() {
-        let dist = vec![
-            vec![0, 1, 1, 1, 1, 1, 1, 1],
-            vec![1, 0, 1, 1, 1, 1, 1, 1],
-            vec![1, 1, 0, 1, 1, 1, 1, 1],
-            vec![1, 1, 1, 0, 1, 1, 1, 1],
-            vec![1, 1, 1, 1, 0, 1, 1, 1],
-            vec![1, 1, 1, 1, 1, 0, 1, 1],
-            vec![1, 1, 1, 1, 1, 1, 0, 1],
-            vec![1, 1, 1, 1, 1, 1, 1, 0],
-        ];
+        assert!(round_four.check_q1(1, &Game::new(2, 1)));
+        assert!(round_four.check_q1(2, &Game::new(4, 3)));
+        assert!(round_four.check_q1(3, &Game::new(6, 5)));
+        assert!(round_four.check_q1(4, &Game::new(8, 7)));
 
-        let mut round_one = Node::new(
-            None,
-            vec![(1, 5), (4, 8), (6, 2), (7, 3)],
-            &dist,
-        );
-
-        round_one = round_one.set_round_index(5);
-
-        let round_two = Node::new(
-            Some(Box::new(round_one)),
-            vec![(2, 8), (5, 3), (4, 7), (1, 6)],
-            &dist,
-        );
-
-        let round_three = Node::new(
-            Some(Box::new(round_two)),
-            vec![(5, 6), (1, 4), (3, 8), (2, 7)],
-            &dist,
-        );
-
-        let round_four = Node::new(
-            Some(Box::new(round_three)),
-            vec![(3, 7), (8, 2), (5, 4), (6, 1)],
-            &dist,
-        );
-
-        assert!(!round_four.check_q1(5, &vec![(1, 5), (4, 8), (6, 2), (7, 3)]));
-        assert!(!round_four.check_q1(5, &vec![(2, 8), (5, 3), (4, 7), (1, 6)]));
-        assert!(!round_four.check_q1(5, &vec![(5, 6), (1, 4), (3, 8), (2, 7)]));
-        assert!(!round_four.check_q1(5, &vec![(3, 7), (8, 2), (5, 4), (6, 1)]));
-
-        assert!(round_four.check_q1(6, &vec![(1, 5), (4, 8), (6, 2), (7, 3)]));
-        assert!(!round_four.check_q1(6, &vec![(2, 8), (5, 3), (4, 7), (1, 6)]));
-        assert!(!round_four.check_q1(6, &vec![(5, 6), (1, 4), (3, 8), (2, 7)]));
-        assert!(!round_four.check_q1(6, &vec![(3, 7), (8, 2), (5, 4), (6, 1)]));
-        
-        assert!(round_four.check_q1(7, &vec![(1, 5), (4, 8), (6, 2), (7, 3)]));
-        assert!(round_four.check_q1(7, &vec![(2, 8), (5, 3), (4, 7), (1, 6)]));
-        assert!(!round_four.check_q1(7, &vec![(5, 6), (1, 4), (3, 8), (2, 7)]));
-        assert!(!round_four.check_q1(7, &vec![(3, 7), (8, 2), (5, 4), (6, 1)]));
-        
-        assert!(round_four.check_q1(8, &vec![(1, 5), (4, 8), (6, 2), (7, 3)]));
-        assert!(round_four.check_q1(8, &vec![(2, 8), (5, 3), (4, 7), (1, 6)]));
-        assert!(round_four.check_q1(8, &vec![(5, 6), (1, 4), (3, 8), (2, 7)]));
-        assert!(!round_four.check_q1(8, &vec![(3, 7), (8, 2), (5, 4), (6, 1)]));
+        assert!(!round_four.check_q1(1, &Game::new(1, 2)));
+        assert!(!round_four.check_q1(2, &Game::new(3, 4)));
+        assert!(!round_four.check_q1(3, &Game::new(5, 6)));
+        assert!(!round_four.check_q1(4, &Game::new(7, 8)));
     }
 
     #[test]
@@ -326,31 +281,61 @@ mod tests {
             vec![1, 1, 1, 1, 1, 1, 1, 0],
         ];
 
+        let game = Game::new(1, 2);
         let round_one = Node::new(
             None,
-            vec![(1, 2), (3, 4), (5, 6), (7, 8)],
+            &game,
+            1,
             &dist,
+            0,
         );
 
-        assert!(round_one.is_officiated(&vec![(1, 10), (11, 12), (13, 14), (15, 16)]));
-        assert!(round_one.is_officiated(&vec![(9, 2), (11, 12), (13, 14), (15, 16)]));
-        assert!(round_one.is_officiated(&vec![(9, 10), (3, 12), (13, 14), (15, 16)]));
-        assert!(round_one.is_officiated(&vec![(9, 10), (11, 4), (13, 14), (15, 16)]));
-        assert!(round_one.is_officiated(&vec![(9, 10), (11, 12), (5, 14), (15, 16)]));
-        assert!(round_one.is_officiated(&vec![(9, 10), (11, 12), (13, 6), (15, 16)]));
-        assert!(round_one.is_officiated(&vec![(9, 10), (11, 12), (13, 14), (7, 16)]));
-        assert!(round_one.is_officiated(&vec![(9, 10), (11, 12), (13, 14), (15, 8)]));
-        
-        assert!(round_one.is_officiated(&vec![(9, 1), (11, 12), (13, 14), (15, 16)]));
-        assert!(round_one.is_officiated(&vec![(2, 10), (11, 12), (13, 14), (15, 16)]));
-        assert!(round_one.is_officiated(&vec![(9, 10), (11, 3), (13, 14), (15, 16)]));
-        assert!(round_one.is_officiated(&vec![(9, 10), (4, 12), (13, 14), (15, 16)]));
-        assert!(round_one.is_officiated(&vec![(9, 10), (11, 12), (13, 5), (15, 16)]));
-        assert!(round_one.is_officiated(&vec![(9, 10), (11, 12), (6, 14), (15, 16)]));
-        assert!(round_one.is_officiated(&vec![(9, 10), (11, 12), (13, 14), (15, 7)]));
-        assert!(round_one.is_officiated(&vec![(9, 10), (11, 12), (13, 14), (8, 16)]));
-        
-        assert!(!round_one.is_officiated(&vec![(9, 10), (11, 12), (13, 14), (15, 16)]));
+        assert!(round_one.is_officiated(&Game::new(1, 2)));
+        assert!(round_one.is_officiated(&Game::new(2, 1)));
+        assert!(!round_one.is_officiated(&Game::new(3, 4)));
+        assert!(!round_one.is_officiated(&Game::new(4, 3)));
+
+        let game = Game::new(3, 4);
+        let round_two = Node::new(
+            Some(Box::new(round_one)),
+            &game,
+            1,
+            &dist,
+            0,
+        );
+
+        assert!(round_two.is_officiated(&Game::new(3, 4)));
+        assert!(round_two.is_officiated(&Game::new(4, 3)));
+        assert!(!round_two.is_officiated(&Game::new(2, 1)));
+        assert!(!round_two.is_officiated(&Game::new(1, 2)));
+
+        let game = Game::new(5, 6);
+        let round_three = Node::new(
+            Some(Box::new(round_two)),
+            &game,
+            1,
+            &dist,
+            0,
+        );
+
+        assert!(round_three.is_officiated(&Game::new(5, 6)));
+        assert!(round_three.is_officiated(&Game::new(6, 5)));
+        assert!(!round_three.is_officiated(&Game::new(2, 1)));
+        assert!(!round_three.is_officiated(&Game::new(1, 2)));
+
+        let game = Game::new(7, 8);
+        let round_four = Node::new(
+            Some(Box::new(round_three)),
+            &game,
+            1,
+            &dist,
+            0,
+        );
+
+        assert!(round_four.is_officiated(&Game::new(7, 8)));
+        assert!(round_four.is_officiated(&Game::new(8, 7)));
+        assert!(!round_four.is_officiated(&Game::new(2, 1)));
+        assert!(!round_four.is_officiated(&Game::new(1, 2)));
     }
 
     #[test]
@@ -366,109 +351,101 @@ mod tests {
             vec![1, 1, 1, 1, 1, 1, 1, 0],
         ];
 
+        let game = Game::new(1, 2);
         let round_one = Node::new(
             None,
-            vec![(1, 5), (4, 8), (6, 2), (7, 3)],
+            &game,
+            1,
             &dist,
+            0,
         );
 
+        let game = Game::new(3, 4);
         let round_two = Node::new(
             Some(Box::new(round_one)),
-            vec![(2, 8), (5, 3), (4, 7), (1, 6)],
+            &game,
+            1,
             &dist,
+            0,
         );
 
+        let game = Game::new(5, 6);
         let round_three = Node::new(
             Some(Box::new(round_two)),
-            vec![(5, 6), (1, 4), (3, 8), (2, 7)],
+            &game,
+            1,
             &dist,
+            0,
         );
 
+        let game = Game::new(7, 8);
         let round_four = Node::new(
             Some(Box::new(round_three)),
-            vec![(3, 7), (8, 2), (5, 4), (6, 1)],
+            &game,
+            1,
             &dist,
+            0,
         );
 
-        assert!(!round_four.check_q2(1, &vec![(1, 5), (4, 8), (6, 2), (7, 3)]));
-        assert!(!round_four.check_q2(1, &vec![(2, 8), (5, 3), (4, 7), (1, 6)]));
-        assert!(!round_four.check_q2(1, &vec![(5, 6), (1, 4), (3, 8), (2, 7)]));
-        assert!(!round_four.check_q2(1, &vec![(3, 7), (8, 2), (5, 4), (6, 1)]));
+        assert!(!round_four.check_q2(-1, &Game::new(1, 2)));
+        assert!(!round_four.check_q2(-1, &Game::new(3, 4)));
+        assert!(!round_four.check_q2(-1, &Game::new(5, 6)));
+        assert!(!round_four.check_q2(-1, &Game::new(7, 8)));
 
-        assert!(!round_four.check_q2(2, &vec![(1, 5), (4, 8), (6, 2), (7, 3)]));
-        assert!(!round_four.check_q2(2, &vec![(2, 8), (5, 3), (4, 7), (1, 6)]));
-        assert!(!round_four.check_q2(2, &vec![(5, 6), (1, 4), (3, 8), (2, 7)]));
-        assert!(!round_four.check_q2(2, &vec![(3, 7), (8, 2), (5, 4), (6, 1)]));
-        
-        assert!(!round_four.check_q2(3, &vec![(1, 5), (4, 8), (6, 2), (7, 3)]));
-        assert!(!round_four.check_q2(3, &vec![(2, 8), (5, 3), (4, 7), (1, 6)]));
-        assert!(!round_four.check_q2(3, &vec![(5, 6), (1, 4), (3, 8), (2, 7)]));
-        assert!(!round_four.check_q2(3, &vec![(3, 7), (8, 2), (5, 4), (6, 1)]));
-        
-        assert!(!round_four.check_q2(4, &vec![(1, 5), (4, 8), (6, 2), (7, 3)]));
-        assert!(!round_four.check_q2(4, &vec![(2, 8), (5, 3), (4, 7), (1, 6)]));
-        assert!(round_four.check_q2(4, &vec![(5, 6), (1, 4), (3, 8), (2, 7)]));
-        assert!(!round_four.check_q2(4, &vec![(3, 7), (8, 2), (5, 4), (6, 1)]));
-    }
+        assert!(!round_four.check_q2(-1, &Game::new(2, 1)));
+        assert!(!round_four.check_q2(-1, &Game::new(4, 3)));
+        assert!(!round_four.check_q2(-1, &Game::new(6, 5)));
+        assert!(!round_four.check_q2(-1, &Game::new(8, 7)));
 
-    #[test]
-    pub fn q2_constraint_sub() {
-        let dist = vec![
-            vec![0, 1, 1, 1, 1, 1, 1, 1],
-            vec![1, 0, 1, 1, 1, 1, 1, 1],
-            vec![1, 1, 0, 1, 1, 1, 1, 1],
-            vec![1, 1, 1, 0, 1, 1, 1, 1],
-            vec![1, 1, 1, 1, 0, 1, 1, 1],
-            vec![1, 1, 1, 1, 1, 0, 1, 1],
-            vec![1, 1, 1, 1, 1, 1, 0, 1],
-            vec![1, 1, 1, 1, 1, 1, 1, 0],
-        ];
+        assert!(!round_four.check_q2(0, &Game::new(1, 2)));
+        assert!(!round_four.check_q2(0, &Game::new(3, 4)));
+        assert!(!round_four.check_q2(0, &Game::new(5, 6)));
+        assert!(!round_four.check_q2(0, &Game::new(7, 8)));
 
-        let mut round_one = Node::new(
-            None,
-            vec![(1, 5), (4, 8), (6, 2), (7, 3)],
-            &dist,
-        );
+        assert!(!round_four.check_q2(0, &Game::new(2, 1)));
+        assert!(!round_four.check_q2(0, &Game::new(4, 3)));
+        assert!(!round_four.check_q2(0, &Game::new(6, 5)));
+        assert!(!round_four.check_q2(0, &Game::new(8, 7)));
 
-        round_one = round_one.set_round_index(5);
+        assert!(!round_four.check_q2(1, &Game::new(1, 2)));
+        assert!(!round_four.check_q2(1, &Game::new(3, 4)));
+        assert!(!round_four.check_q2(1, &Game::new(5, 6)));
+        assert!(!round_four.check_q2(1, &Game::new(7, 8)));
 
-        let round_two = Node::new(
-            Some(Box::new(round_one)),
-            vec![(2, 8), (5, 3), (4, 7), (1, 6)],
-            &dist,
-        );
+        assert!(!round_four.check_q2(1, &Game::new(2, 1)));
+        assert!(!round_four.check_q2(1, &Game::new(4, 3)));
+        assert!(!round_four.check_q2(1, &Game::new(6, 5)));
+        assert!(!round_four.check_q2(1, &Game::new(8, 7)));
 
-        let round_three = Node::new(
-            Some(Box::new(round_two)),
-            vec![(5, 6), (1, 4), (3, 8), (2, 7)],
-            &dist,
-        );
+        assert!(round_four.check_q2(2, &Game::new(1, 2)));
+        assert!(!round_four.check_q2(2, &Game::new(3, 4)));
+        assert!(!round_four.check_q2(2, &Game::new(5, 6)));
+        assert!(!round_four.check_q2(2, &Game::new(7, 8)));
 
-        let round_four = Node::new(
-            Some(Box::new(round_three)),
-            vec![(3, 7), (8, 2), (5, 4), (6, 1)],
-            &dist,
-        );
+        assert!(round_four.check_q2(2, &Game::new(2, 1)));
+        assert!(!round_four.check_q2(2, &Game::new(4, 3)));
+        assert!(!round_four.check_q2(2, &Game::new(6, 5)));
+        assert!(!round_four.check_q2(2, &Game::new(8, 7)));
 
-        assert!(!round_four.check_q2(5, &vec![(1, 5), (4, 8), (6, 2), (7, 3)]));
-        assert!(!round_four.check_q2(5, &vec![(2, 8), (5, 3), (4, 7), (1, 6)]));
-        assert!(!round_four.check_q2(5, &vec![(5, 6), (1, 4), (3, 8), (2, 7)]));
-        assert!(!round_four.check_q2(5, &vec![(3, 7), (8, 2), (5, 4), (6, 1)]));
+        assert!(round_four.check_q2(3, &Game::new(1, 2)));
+        assert!(round_four.check_q2(3, &Game::new(3, 4)));
+        assert!(!round_four.check_q2(3, &Game::new(5, 6)));
+        assert!(!round_four.check_q2(3, &Game::new(7, 8)));
 
-        assert!(!round_four.check_q2(6, &vec![(1, 5), (4, 8), (6, 2), (7, 3)]));
-        assert!(!round_four.check_q2(6, &vec![(2, 8), (5, 3), (4, 7), (1, 6)]));
-        assert!(!round_four.check_q2(6, &vec![(5, 6), (1, 4), (3, 8), (2, 7)]));
-        assert!(!round_four.check_q2(6, &vec![(3, 7), (8, 2), (5, 4), (6, 1)]));
-        
-        assert!(!round_four.check_q2(7, &vec![(1, 5), (4, 8), (6, 2), (7, 3)]));
-        assert!(!round_four.check_q2(7, &vec![(2, 8), (5, 3), (4, 7), (1, 6)]));
-        assert!(!round_four.check_q2(7, &vec![(5, 6), (1, 4), (3, 8), (2, 7)]));
-        assert!(!round_four.check_q2(7, &vec![(3, 7), (8, 2), (5, 4), (6, 1)]));
-        
-        assert!(!round_four.check_q2(8, &vec![(1, 5), (4, 8), (6, 2), (7, 3)]));
-        assert!(!round_four.check_q2(8, &vec![(2, 8), (5, 3), (4, 7), (1, 6)]));
-        assert!(round_four.check_q2(8, &vec![(5, 6), (1, 4), (3, 8), (2, 7)]));
-        assert!(!round_four.check_q2(8, &vec![(3, 7), (8, 2), (5, 4), (6, 1)]));
+        assert!(round_four.check_q2(3, &Game::new(2, 1)));
+        assert!(round_four.check_q2(3, &Game::new(4, 3)));
+        assert!(!round_four.check_q2(3, &Game::new(6, 5)));
+        assert!(!round_four.check_q2(3, &Game::new(8, 7)));
+
+        assert!(round_four.check_q2(4, &Game::new(1, 2)));
+        assert!(round_four.check_q2(4, &Game::new(3, 4)));
+        assert!(round_four.check_q2(4, &Game::new(5, 6)));
+        assert!(!round_four.check_q2(4, &Game::new(7, 8)));
+
+        assert!(round_four.check_q2(4, &Game::new(2, 1)));
+        assert!(round_four.check_q2(4, &Game::new(4, 3)));
+        assert!(round_four.check_q2(4, &Game::new(6, 5)));
+        assert!(!round_four.check_q2(4, &Game::new(8, 7)));
     }
 
     #[test]
@@ -480,37 +457,40 @@ mod tests {
             vec![1, 1, 1, 0],
         ];
 
+        let game = Game::new(1, 2);
         let round_one = Node::new(
             None,
-            vec![(1, 1), (1, 1)],
+            &game,
+            1,
             &dist,
+            0,
         );
 
-        assert!(round_one.check_global(3));
-        assert!(!round_one.check_global(2));
-        assert!(!round_one.check_global(1));
-
+        let game = Game::new(2, 1);
         let round_two = Node::new(
             Some(Box::new(round_one)),
-            vec![(2, 2), (2, 2)],
+            &game,
+            1,
             &dist,
+            0,
         );
 
-        assert!(round_two.check_global(2));
-        assert!(!round_two.check_global(1));
-
+        let game = Game::new(3, 4);
         let round_three = Node::new(
             Some(Box::new(round_two)),
-            vec![(3, 3), (3, 3)],
+            &game,
+            1,
             &dist,
+            0,
         );
 
-        assert!(round_three.check_global(1));
-
+        let game = Game::new(4, 3);
         let round_four = Node::new(
             Some(Box::new(round_three)),
-            vec![(4, 4), (4, 4)],
+            &game,
+            1,
             &dist,
+            0,
         );
 
         assert!(round_four.check_global(0));
