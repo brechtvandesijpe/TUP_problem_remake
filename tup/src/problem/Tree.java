@@ -2,6 +2,8 @@ package problem;
 
 import model.Instance;
 
+import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.IntStream;
@@ -122,6 +124,16 @@ public class Tree {
         Arrays.sort(gameGreedyDistance, Comparator.comparingInt(ggd -> ggd[1]));
     }
 
+    public void printDebugInfo() {
+        if (PRINT_GAP) {
+            DecimalFormat df = new DecimalFormat("0.00%");
+            double gapPercentage = (double) (upperbound - lowerboundCalculator.getLBOfRounds(0, NUM_ROUNDS - 1)) / upperbound;
+            SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+            String currentTimeStamp = dateFormat.format(new Date());
+            System.out.println(lightGrey + "[" + currentTimeStamp + "]" + reset + " GAP: " + df.format(gapPercentage) + ", LB: " + lowerboundCalculator.getLBOfRounds(0, NUM_ROUNDS - 1) + ", UB: " + upperbound + orange + " [UB ↓]" + reset);
+        }
+    }
+
     // Algorithm 2.1: Branch-and-bound algorithm
     public void performTraversal(int umpire, int currentRoundIndex) {
         int[] sortedListOfFeasibleAllocations = getFeasibleAllocations(umpire, currentRoundIndex);
@@ -146,6 +158,9 @@ public class Tree {
                     IntStream.rangeClosed(branchStart, NUM_UMPIRES * (1 + endRoundIndex) - 1).forEach(g -> solution[getGame(g).getRound()][gameUmpireLookup[g]] = g);
                     if (evaluate() < upperbound) {
                         setUpperbound();
+                        if (!isSub) {
+                            printDebugInfo();
+                        }
                     }
                 } else {
                     // Recur to the next umpire and round
