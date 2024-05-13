@@ -18,6 +18,7 @@ public class Config {
     public static boolean ASYNC = true;
     public static BranchStrategy BRANCH_STRATEGY = BranchStrategy.BFS_DISTANCE;
     public static MatchType MATCH_TYPE = MatchType.JONKER_VOLGENANT;
+    public static boolean MATCH_LOWERBOUND = true;
 
     // SETTINGS DEBUGGING
     public static boolean DEBUG_TREE = false;
@@ -25,7 +26,7 @@ public class Config {
     public static boolean DEBUG_LOWERBOUND_CALCULATOR = false;
     public static boolean DEBUG_COSTARRAY = false;
     public static boolean DEBUG_LOWERBOUND_MATCHER = false;
-    public static boolean MATCH_LOWERBOUND = true;
+    public static boolean PRINT_LB_ARRAY = true;
 
     // PARAMETERS
     public static int INFEASIBLE_WEIGHT = 10;

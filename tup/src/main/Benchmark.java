@@ -83,5 +83,17 @@ public class Benchmark {
             System.out.println(red + "[FAILED]  " + reset + instanceFileName + " {" + Q1 + "," + Q2 + "} : Expected " + expectedValue + ", Actual " + solutionMessage + " - " + (endExecution - startExecution) / 1_000_000_000.0 + " sec");
         }
 
+        if (PRINT_LB_ARRAY) {
+            System.out.println("==================================== LOWERBOUNDS ====================================");
+            if (Config.LOWERBOUND_ENABLED) {
+                int[][] lb = tree.getLowerboundCalculator().getRoundLBs();
+                for (int[] ints : lb) {
+                    for (int j = 0; j < lb[0].length; j++) {
+                        System.out.print(ints[j] + " ");
+                    }
+                    System.out.println();
+                }
+            }
+        }
     }
 }
