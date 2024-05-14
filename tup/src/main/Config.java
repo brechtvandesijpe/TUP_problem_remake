@@ -1,5 +1,7 @@
 package main;
 
+import metaheuristics.Meta;
+import metaheuristics.MetaType;
 import problem.BranchStrategy;
 import subproblem.match.MatchType;
 
@@ -18,6 +20,7 @@ public class Config {
     public static boolean ASYNC = true;
     public static BranchStrategy BRANCH_STRATEGY = BranchStrategy.BFS_DISTANCE;
     public static MatchType MATCH_TYPE = MatchType.JONKER_VOLGENANT;
+    public static MetaType META_HEURISTIC = MetaType.STEEPEST_DESCENT;
     public static boolean MATCH_LOWERBOUND = true;
 
     // SETTINGS DEBUGGING
