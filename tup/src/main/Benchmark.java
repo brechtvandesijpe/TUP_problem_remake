@@ -86,7 +86,7 @@ public class Benchmark {
         if (PRINT_LB_ARRAY) {
             System.out.println("==================================== LOWERBOUNDS ====================================");
             if (Config.LOWERBOUND_ENABLED) {
-                int[][] lb = tree.getLowerboundCalculator().getRoundLBs();
+                int[][] lb = tree.getLowerboundCalculator().roundLBs;
                 for (int[] ints : lb) {
                     for (int j = 0; j < lb[0].length; j++) {
                         System.out.print(ints[j] + " ");

@@ -2,6 +2,7 @@ package problem;
 
 import main.Config;
 import model.Instance;
+
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -11,7 +12,7 @@ import static main.Config.*;
 
 public class LowerboundCalculator {
     private final Instance instance;
-    private final int[][] roundLBs;
+    public final int[][] roundLBs;
     private final LowerboundMatch lowerboundMatch;
     private final Tree tree;
 
@@ -22,20 +23,32 @@ public class LowerboundCalculator {
         this.lowerboundMatch = new LowerboundMatch();
     }
 
-    // Algorithm 2.2: Lower bounds computation algorithm
+    /**
+     * Algorithm 2.2: Lower bounds computation algorithm
+     * PART 1: Calculate initial lowerbounds
+     * PART 2: Strengthening lower bounds : increment subproblem size
+     * PART 3: Propagation
+     */
+
     public void calculateLBs() {
-        // System.out.println("test");
-        // Calculate initial lower bounds for all pairs of rounds using the values of the matchings between every two consecutive rounds
+        // PART 1: Calculate initial lower bounds for all pairs of rounds using the values of the matchings between every two consecutive rounds
         if (MATCH_LOWERBOUND) {
-            IntStream.range(0, NUM_ROUNDS - 1).forEach(roundIndex -> {
-                int newLowerBoundValue = lowerboundMatch.calculateRoundMatching(roundIndex);
-                int nextRound = roundIndex + 1;
-                IntStream.rangeClosed(0, roundIndex).forEach(i -> IntStream.rangeClosed(nextRound, NUM_ROUNDS - 1).forEach(j -> roundLBs[i][j] = Math.max(roundLBs[i][j], roundLBs[i][roundIndex] + newLowerBoundValue + roundLBs[roundIndex][j])));
-            });
+            if (Config.LB_MATCH == LowerboundMatchType.MATCH_ALGORITHM) {
+                //System.out.println("Chose MATCH_ALGORITHM");
+                IntStream.range(0, NUM_ROUNDS - 1).forEach(roundIndex -> {
+                    int newLowerBoundValue = lowerboundMatch.calculateRoundMatching(roundIndex);
+                    int nextRound = roundIndex + 1;
+                    IntStream.rangeClosed(0, roundIndex).forEach(i -> IntStream.rangeClosed(nextRound, NUM_ROUNDS - 1).forEach(j -> roundLBs[i][j] = Math.max(roundLBs[i][j], roundLBs[i][roundIndex] + newLowerBoundValue + roundLBs[roundIndex][j])));
+                });
+            } else if (Config.LB_MATCH == LowerboundMatchType.BRANCH_AND_BOUND_2_DEEP) {
+                // todo
+            } else {
+
+            }
         }
 
         lowerboundMatch.generateCostArray(1);
-        // Solving subproblems with size [2, R-1]
+        // PART 2: Solving subproblems with size [2, R-1]
         for (int k = 1; k <= NUM_ROUNDS - 1; k++) {
             int r = NUM_ROUNDS - 1 - k;
             Tree tree = new Tree(instance, r, r + k, true);
@@ -44,6 +57,7 @@ public class LowerboundCalculator {
             for (int r1 = r; r1 >= 0; r1--) {
                 for (int r2 = r + k; r2 <= NUM_ROUNDS - 1; r2++) {
                     printDebugInfo();
+                    // PART 3: Lowerbound propagation
                     roundLBs[r1][r2] = Math.max(roundLBs[r1][r2], roundLBs[r1][r] + solutionValue + roundLBs[r + k][r2]);
                     if (DEBUG_LOWERBOUND_CALCULATOR) {
                         System.out.println("Updated {" + r1 + "," + r2 + "} to: " + roundLBs[r1][r2]);
@@ -61,13 +75,5 @@ public class LowerboundCalculator {
             String currentTimeStamp = dateFormat.format(new Date());
             System.out.println(lightGrey + "[" + currentTimeStamp + "]" + reset + " GAP: " + df.format(gapPercentage) + ", LB: " + roundLBs[0][NUM_ROUNDS - 1] + ", UB: " + tree.getUpperbound() + yellow + " [LB ↑]" + Config.reset);
         }
-    }
-
-    public int getLBOfRounds(int round, int endRound) {
-        return roundLBs[round][endRound];
-    }
-
-    public int[][] getRoundLBs() {
-        return roundLBs;
     }
 }

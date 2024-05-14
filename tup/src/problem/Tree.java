@@ -127,10 +127,10 @@ public class Tree {
     public void printDebugInfo() {
         if (PRINT_GAP) {
             DecimalFormat df = new DecimalFormat("0.00%");
-            double gapPercentage = (double) (upperbound - lowerboundCalculator.getLBOfRounds(0, NUM_ROUNDS - 1)) / upperbound;
+            double gapPercentage = (double) (upperbound - lowerboundCalculator.roundLBs[0][NUM_ROUNDS - 1]) / upperbound;
             SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
             String currentTimeStamp = dateFormat.format(new Date());
-            System.out.println(lightGrey + "[" + currentTimeStamp + "]" + reset + " GAP: " + df.format(gapPercentage) + ", LB: " + lowerboundCalculator.getLBOfRounds(0, NUM_ROUNDS - 1) + ", UB: " + upperbound + orange + " [UB ↓]" + reset);
+            System.out.println(lightGrey + "[" + currentTimeStamp + "]" + reset + " GAP: " + df.format(gapPercentage) + ", LB: " + lowerboundCalculator.roundLBs[0][NUM_ROUNDS - 1] + ", UB: " + upperbound + orange + " [UB ↓]" + reset);
         }
     }
 
@@ -143,7 +143,7 @@ public class Tree {
                 assign(a, umpire);
 
                 // Calculate the lower bound for the current round, untill the end round
-                lowerbound = LOWERBOUND_ENABLED ? lowerboundCalculator.getLBOfRounds(currentRoundIndex, endRoundIndex) : 0;
+                lowerbound = LOWERBOUND_ENABLED ? lowerboundCalculator.roundLBs[currentRoundIndex][endRoundIndex] : 0;
                 if (DEBUG_TREE && LOWERBOUND_ENABLED) {
                     System.out.println("LB: {" + currentRoundIndex + " - " + endRoundIndex + "}, " + lowerbound);
                 }

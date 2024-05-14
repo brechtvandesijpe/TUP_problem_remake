@@ -1,8 +1,8 @@
 package main;
 
-import metaheuristics.Meta;
 import metaheuristics.MetaType;
 import problem.BranchStrategy;
+import problem.LowerboundMatchType;
 import subproblem.match.MatchType;
 
 public class Config {
@@ -21,6 +21,7 @@ public class Config {
     public static BranchStrategy BRANCH_STRATEGY = BranchStrategy.BFS_DISTANCE;
     public static MatchType MATCH_TYPE = MatchType.JONKER_VOLGENANT;
     public static MetaType META_HEURISTIC = MetaType.STEEPEST_DESCENT;
+    public static LowerboundMatchType LB_MATCH = LowerboundMatchType.MATCH_ALGORITHM;
     public static boolean MATCH_LOWERBOUND = true;
 
     // SETTINGS DEBUGGING
@@ -29,7 +30,7 @@ public class Config {
     public static boolean DEBUG_LOWERBOUND_CALCULATOR = false;
     public static boolean DEBUG_COSTARRAY = false;
     public static boolean DEBUG_LOWERBOUND_MATCHER = false;
-    public static boolean PRINT_LB_ARRAY = true;
+    public static boolean PRINT_LB_ARRAY = false;
     public static boolean PRINT_GAP = false;
     public static boolean PRINT_PRUNING_INFO = true;
     // PARAMETERS
