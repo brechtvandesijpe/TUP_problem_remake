@@ -47,7 +47,6 @@ public class LowerboundCalculator {
             }
         }
 
-        lowerboundMatch.generateCostArray(1);
         // PART 2: Solving subproblems with size [2, R-1]
         for (int k = 1; k <= NUM_ROUNDS - 1; k++) {
             int r = NUM_ROUNDS - 1 - k;

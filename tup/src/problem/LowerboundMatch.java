@@ -5,10 +5,10 @@ import model.Instance;
 import subproblem.match.Match;
 
 import java.util.Arrays;
+
 import static main.Config.*;
 import static model.Instance.getTravelDistanceBetween;
 import static subproblem.match.MatchFactory.createMatchAlgorithm;
-
 
 public class LowerboundMatch {
     private final int[][] costArray;
@@ -18,11 +18,20 @@ public class LowerboundMatch {
         this.costArray = new int[NUM_UMPIRES][NUM_UMPIRES];
     }
 
+    /**
+     * Calculates the matching cost for the given round.
+     */
+
     public int calculateRoundMatching(int roundIndex) {
         // Calculate matching distance based on the result of cost array for the roundIndex
         generateCostArray(roundIndex);
+        // generateCostArray(roundIndex + 1);
         return calculateMatchingDistance(solveAssignmentProblem(), roundIndex);
     }
+
+    /**
+     * Solves the assignment problem using a matching algorithm.
+     */
 
     public int[][] solveAssignmentProblem() {
         Match match = createMatchAlgorithm(MATCH_TYPE);
@@ -32,6 +41,10 @@ public class LowerboundMatch {
         }
         return ret;
     }
+
+    /**
+     * Generates the cost array for the given round.
+     */
 
     public void generateCostArray(int roundIndex) {
         Arrays.stream(costArray).forEach(row -> Arrays.fill(row, MAX));
@@ -52,6 +65,10 @@ public class LowerboundMatch {
         }
     }
 
+    /**
+     * Fills the cost array for the given round and umpire.
+     */
+
     public void fillCostArray(int[][] costArray, int roundIndex, int umpireId) {
         if (umpireId >= NUM_UMPIRES) {
             return;
@@ -66,17 +83,29 @@ public class LowerboundMatch {
         fillCostArray(costArray, roundIndex, nextUmpireId);
     }
 
+    /**
+     * Calculates the trav distance between two games.
+     */
+
     public int calculateGameDistance(Game current, Game next) {
         int currentStadium = current.getHomePlayerId();
         int nextStadium = next.getHomePlayerId();
         return getTravelDistanceBetween(currentStadium, nextStadium);
     }
 
+    /**
+     * Retrieves the game at the specified round and umpire from branch start.
+     */
+
     public Game getGame(int round, int umpireId) {
         int firstGameOfRound = round * NUM_UMPIRES;
         int gameId = firstGameOfRound + umpireId;
         return Instance.getGame(gameId);
     }
+
+    /**
+     * Calculates the matching distance based on the result of the assignment problem.
+     */
 
     public int calculateMatchingDistance(int[][] result, int currentRoundIndex) {
         return Arrays.stream(result).mapToInt(assignment -> {
@@ -89,5 +118,10 @@ public class LowerboundMatch {
             }
             return interGameDistance;
         }).sum();
+    }
+
+    @Override
+    public String toString() {
+        return "LowerboundMatch{" + "costArray=" + Arrays.toString(costArray) + ", MAX=" + MAX + '}';
     }
 }
