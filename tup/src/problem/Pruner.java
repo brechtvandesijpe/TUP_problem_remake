@@ -24,11 +24,21 @@ public class Pruner {
         this.tree = tree;
     }
 
+    // todo: vooraf prunen op global?
+
+    /**
+     * Initializes the pruner for a given round.
+     */
+
     public void initPruner(int currentRoundIndex) {
         this.startRoundForQ1Constraint = Math.max(currentRoundIndex + 1 - Config.Q1, tree.getStartRoundIndex());
         this.startRoundForQ2Constraint = Math.max(currentRoundIndex + 1 - Config.Q2, tree.getStartRoundIndex());
         this.prunedGames = new HashSet<>();
     }
+
+    /**
+     * Prunes games based on specific constraints.
+     */
 
     public HashSet<Integer> pruneGames(int umpire, int currentRoundIndex) {
         initPruner(currentRoundIndex);
@@ -38,6 +48,10 @@ public class Pruner {
         numPrunedGames += prunedGames.size();
         return prunedGames;
     }
+
+    /**
+     * Prunes games based on the Q1 constraint.
+     */
 
     public void pruneBasedOnQ1Constraint(int umpire, int roundIndex) {
         for (int r = startRoundForQ1Constraint; r < roundIndex; r++) {
@@ -51,6 +65,10 @@ public class Pruner {
         }
         numPrunedBasedAfterQ1 += prunedGames.size();
     }
+
+    /**
+     * Prunes games based on the Q2 constraint.
+     */
 
     public void pruneBasedOnQ2Constraint(int umpire, int roundIndex) {
         IntStream.range(startRoundForQ2Constraint, roundIndex).flatMap(r -> {
@@ -66,10 +84,18 @@ public class Pruner {
         numPrunedBasedAfterQ2 += prunedGames.size();
     }
 
+    /**
+     * Prunes games based on previous assignments.
+     */
+
     public void pruneBasedOnPreviousAssignments(int umpire, int roundIndex) {
         IntStream.range(0, umpire).mapToObj(uid -> Math.floorMod(tree.umpireScheduleByRound[uid][roundIndex], NUM_UMPIRES)).forEach(prunedGames::add);
         numPrunedBasedAfterPreviousAssignments += prunedGames.size();
     }
+
+    /**
+     * Checks if a game is assigned based on gameId
+     */
 
     public boolean isAssigned(int gameId) {
         return 0 <= gameId;
