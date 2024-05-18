@@ -31,6 +31,7 @@ public class Benchmark {
                 " * $$$$$$$/  $$$$$$$$/ $$/   $$/  $$$$$$/  $$/   $$/ $$/      $$/ $$/   $$/ $$/   $$/ $$/   $$/\n" +
                 " */" + reset
         );
+        // todo: voeg de grotere nog toe
 
         System.out.println(blue + "------------------------------- 8 TEAMS -------------------------------" + reset);
         benchmark.testInstance("resources/umps8.txt", 4, 2, 34311);
@@ -59,6 +60,10 @@ public class Benchmark {
         System.out.println(blue + "------------------------------- 16 TEAMS -------------------------------" + reset);
         benchmark.testInstance("resources/umps16.txt", 8, 2, -1);
     }
+
+    /**
+     * Test an instance with specified parameters.
+     */
 
     private void testInstance(String instanceFileName, int Q1, int Q2, int expectedValue) throws IOException {
         Game.gameId = 0;

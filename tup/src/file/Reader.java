@@ -7,6 +7,10 @@ import java.util.*;
 
 public class Reader {
 
+    /**
+     * Reads data from the tup file and constructs an Instance object.
+     */
+
     public static Instance read(File input) throws IOException {
         String str;
         int numTeams = 0;
@@ -28,6 +32,10 @@ public class Reader {
             return new Instance(opponents, distances);
         }
     }
+
+    /**
+     * Helpermethod that reads a 2D array from the provided BufferedReader.
+     */
 
     public static int[][] readArray(BufferedReader reader, int rows) throws IOException {
         int[][] array = new int[rows][];
