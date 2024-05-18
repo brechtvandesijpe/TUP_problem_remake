@@ -52,6 +52,11 @@ public class Tree {
         this.pruner = new Pruner(this);
     }
 
+
+    /**
+     * Initiates the global traversal (all rounds)
+     */
+
     public void startGlobalTraversal() {
         preventSolutionRotation();
         if (LOWERBOUND_ENABLED) {
@@ -64,11 +69,19 @@ public class Tree {
         }
     }
 
+    /**
+     * Initiates a sub-traversal of the tree. (from start round to end round)
+     */
+
     public void startSubTraversal(LowerboundCalculator lowerboundCalculator) {
         this.lowerboundCalculator = lowerboundCalculator;
         preventSolutionRotation();
         performTraversal(0, startRoundIndex + 1);
     }
+
+    /**
+     * Cancels the lower bound calculation.
+     */
 
     public void cancelLowerBoundCalculation(CompletableFuture<Void> lowerboundFuture) {
         if (lowerboundFuture != null) {
@@ -76,24 +89,37 @@ public class Tree {
         }
     }
 
+    /**
+     * Initiates the lower bound calculation asynchronously. (async with the global traversal)
+     */
+
     public CompletableFuture<Void> startLowerBoundCalculationAsync() {
         lowerboundCalculator = new LowerboundCalculator(this);
         return CompletableFuture.runAsync(lowerboundCalculator::calculateLBs);
     }
+
+    /**
+     * Gets the feasible allocations for a given umpire and round index.
+     */
 
     public int[] getFeasibleAllocations(int umpire, int currentRoundIndex) {
         prunedGames = pruner.pruneGames(umpire, currentRoundIndex);
         if (DEBUG_PRUNER) {
             pruner.printPruningInfo();
         }
-        int[][] gameGreedyDistance = createGameGreedyDistanceArray(umpire, currentRoundIndex);
 
+        int[][] gameGreedyDistance = createGameGreedyDistanceArray(umpire, currentRoundIndex);
+        // todo: voorzie iets intuïtiever
         strategyMap.put(BranchStrategy.BFS_DISTANCE, () -> sortGameGreedyDistanceArray(gameGreedyDistance));
         strategyMap.put(BranchStrategy.SHUFFLE, () -> {/* todo */});
         strategyMap.put(BranchStrategy.DFS, () -> {/* no action required */});
         strategyMap.getOrDefault(BRANCH_STRATEGY, () -> {/* default action */}).run();
         return extractResultFromGameGreedyDistance(gameGreedyDistance);
     }
+
+    /**
+     * Creates the game greedy distance array for a given umpire and round index.
+     */
 
     public int[][] createGameGreedyDistanceArray(int umpire, int currentRoundIndex) {
         long startTime = System.currentTimeMillis();
@@ -112,6 +138,10 @@ public class Tree {
         return gameGreedyDistance;
     }
 
+    /**
+     * Extracts the result from the game greedy distance array.
+     */
+
     public int[] extractResultFromGameGreedyDistance(int[][] gameGreedyDistance) {
         int[] sortedListOfFeasibleAllocations = new int[gameGreedyDistance.length];
         for (int ggd = 0; ggd < gameGreedyDistance.length; ggd++) {
@@ -119,6 +149,10 @@ public class Tree {
         }
         return sortedListOfFeasibleAllocations;
     }
+
+    /**
+     * Sorts the game greedy distance array by dist.
+     */
 
     public void sortGameGreedyDistanceArray(int[][] gameGreedyDistance) {
         Arrays.sort(gameGreedyDistance, Comparator.comparingInt(ggd -> ggd[1]));
@@ -134,7 +168,10 @@ public class Tree {
         }
     }
 
-    // Algorithm 2.1: Branch-and-bound algorithm
+    /**
+     * Algorithm 2.1: Branch-and-bound algorithm
+     */
+
     public void performTraversal(int umpire, int currentRoundIndex) {
         int[] sortedListOfFeasibleAllocations = getFeasibleAllocations(umpire, currentRoundIndex);
         // Iterate through each feasible allocation
@@ -171,6 +208,10 @@ public class Tree {
         }
     }
 
+    /**
+     * Assigns a game to an umpire. (bidirectional link)
+     */
+
     public void assign(int gameId, int umpire) {
         int roundIndex = getGame(gameId).getRound();
         int previousRoundIndex = roundIndex - 1;
@@ -180,12 +221,20 @@ public class Tree {
         partialDistance += getInterStadiumDistance(gameIdPreviousRound, gameId);
     }
 
+    /**
+     * Unassigns a game from an umpire. (bidirectional link)
+     */
+
     public void unassign(int gameId, int umpire) {
         int roundIndex = getGame(gameId).getRound();
         int previousRoundIndex = roundIndex - 1;
         int gameIdPreviousRound = umpireScheduleByRound[umpire][previousRoundIndex];
         partialDistance -= getInterStadiumDistance(gameIdPreviousRound, gameId);
     }
+
+    /**
+     * Prevents the rotation of solutions over rounds.
+     */
 
     public void preventSolutionRotation() {
         IntStream.range(0, NUM_UMPIRES).forEach(umpireId -> {
@@ -197,6 +246,11 @@ public class Tree {
     }
 
     // ********** EVALUATION
+
+    /**
+     * Evaluates the solution.
+     */
+
     public int evaluate() {
         totalDistance = IntStream.range(startRoundIndex, endRoundIndex).map(round -> IntStream.range(0, NUM_UMPIRES).map(umpireId -> {
             int nextRound = round + 1;
@@ -212,15 +266,28 @@ public class Tree {
         return eval != 0 ? Integer.MAX_VALUE : totalDistance;
     }
 
+    /**
+     * Evaluates the global constraints.
+     */
+
     public void evaluateGlobalConstraint() {
         int[][] stadiumCount = new int[NUM_UMPIRES][NUM_TEAMS];
         calculateStadiumCount(stadiumCount);
         eval = evaluateStadiumCounts(stadiumCount);
     }
 
+    /**
+     * Calculates the stadium count for global constr.
+     */
+
     public void calculateStadiumCount(int[][] stadiumCount) {
         IntStream.range(0, NUM_ROUNDS).forEach(round -> IntStream.range(0, NUM_UMPIRES).forEach(umpireId -> stadiumCount[umpireId][getGame(solution[round][umpireId]).getHomePlayerId()] += 1));
     }
+
+
+    /**
+     * Evaluates the stadium counts against global constr.
+     */
 
     public int evaluateStadiumCounts(int[][] stadiumCount) {
         return IntStream.range(0, NUM_UMPIRES).flatMap(umpireId -> IntStream.range(0, NUM_TEAMS).filter(stadium -> stadiumCount[umpireId][stadium] < 1)).map(stadium -> INFEASIBLE_WEIGHT).sum();
@@ -228,30 +295,55 @@ public class Tree {
 
     // ************** CHECKS
 
+    /**
+     * Gets the next umpire ID if there is a next one.
+     */
+
     public int getNextUmpireId(int currentUmpireId) {
         return isLastUmpire(currentUmpireId) ? 0 : currentUmpireId + 1;
     }
 
+    /**
+     * Gets the next round index if there is a next one.
+     */
+
     public int getNextRoundIndex(int currentUmpireId, int currentRoundIndex) {
         return isLastUmpire(currentUmpireId) ? currentRoundIndex + 1 : currentRoundIndex;
     }
+
+    /**
+     * Checks if the traversal is ready for local search. -> solution complete
+     */
 
     public boolean isReadyForLocalSearch(int umpireId, int currentRoundIndex) {
         // end of branch
         return isLastUmpire(umpireId) && currentRoundIndex == endRoundIndex;
     }
 
+    /**
+     * Checks if the given umpire ID is the last umpire to be checked.
+     */
+
     public boolean isLastUmpire(int umpireId) {
         return umpireId == NUM_UMPIRES - 1;
     }
 
     // ******** SETTERS
+
+    /**
+     * Sets the upper bound solution. (best dist).
+     */
     public void setUpperbound() {
         UBSolution = solution;
         upperbound = evaluate();
     }
 
     // ******** GETTERS
+
+    /**
+     * Gets shortest dist.
+     */
+
     public int getUpperbound() {
         return upperbound;
     }
