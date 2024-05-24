@@ -124,13 +124,13 @@ impl Round {
         }
     }
     
-    pub fn to_ints(
+    pub fn as_vec(
         &self,
-    ) -> Vec<(i32, i32)> {
+    ) -> Vec<&Game> {
         let mut output = Vec::new();
 
         for game in &self.games {
-            output.push((game.home_player, game.out_player));
+            output.push(game);
         }
 
         output
@@ -159,249 +159,54 @@ impl Model {
         }
     }
 
-    pub fn get_round_ints(
+    pub fn get_round(
         &self,
         round_index: i32,
-    ) -> Vec<(i32, i32)> {
-        self.rounds[(round_index - 1) as usize].to_ints()
-    }
-}
-
-fn pretty_print(
-    matrix: &Vec<Vec<i128>>,
-) {
-    println!("--");
-    for row in matrix {
-        println!("{:?}", row);
-    }
-}
-
-#[derive(Clone)]
-pub struct Node<'a> {
-    parent: Option<Box<Node<'a>>>,
-    game: &'a Game,
-    pub umpire_index: i32,
-    pub score: i128,
-    pub round_index: i32,
-    dist: &'a Vec<Vec<i128>>,
-    visited_teams: Vec<bool>,
-}
-
-impl<'a> Node<'a> {
-    pub fn new(
-        parent: Option<Box<Node<'a>>>,
-        game: &'a Game,
-        umpire_index: i32,
-        dist: &'a Vec<Vec<i128>>,
-        previous_team_score: i128,
-    ) -> Self {
-        let mut visited_teams = vec![false; dist.len()];
-        visited_teams[(game.home_player - 1) as usize] = true;
-
-        let mut round_index = 1;
-        let mut score: i128 = previous_team_score;
-
-        if let Some(parent) = &parent {
-            round_index += parent.round_index;
-            score += parent.score + dist[(parent.game.home_player - 1) as usize][(game.home_player - 1) as usize];
-            
-            for i in 0..visited_teams.len() {
-                if parent.visited_teams[i] == true {
-                    visited_teams[i] = true;
-                }
-            }
-        }
-
-        Self {
-            parent,
-            game,
-            umpire_index,
-            score,
-            round_index,
-            dist,
-            visited_teams,
-        }
-    }
-
-    pub fn is_visited(
-        &self,
-        new_game: &Game,
-    ) -> bool {
-        if self.game.home_player == new_game.home_player {
-            return true;
-        }
-
-        false
-    }
-
-    pub fn is_officiated(
-        &self,
-        new_game: &Game,
-    ) -> bool {
-        if self.game.home_player == new_game.home_player || self.game.home_player == new_game.out_player || 
-            self.game.out_player == new_game.home_player || self.game.out_player == new_game.out_player {
-            return true;
-        }
-
-        false
-    }
-
-    pub fn is_previous(
-        &self,
-        new_assignment: &Game
-    ) -> bool {
-        if self.game.home_player == new_assignment.home_player && self.game.out_player == new_assignment.out_player {
-            return true;
-        }
-
-        false
-    }
-
-    pub fn check_q1(
-        &self,
-        stop_round: i32,
-        new_assignment: &Game,
-    ) -> bool {
-        let mut result = true;
-
-        if stop_round < self.round_index {
-            if let Some(parent) = &self.parent {
-                result = parent.check_q1(stop_round, new_assignment);
-            };
-        }
-        
-        let is_visited = self.is_visited(new_assignment);
-        result && !is_visited
-    }
-
-    pub fn check_q2(
-        &self,
-        stop_round: i32,
-        new_assignment: &Game,
-    ) -> bool {
-        let mut result = true;
-        
-        if stop_round < self.round_index {
-            if let Some(parent) = &self.parent {
-                result = parent.check_q2(stop_round, new_assignment);
-            }
-        }
-        
-        let is_officiated = self.is_officiated(new_assignment);
-        result && !is_officiated
-    }
-
-    pub fn check_global(
-        &self,
-        num_rounds_left: i32,
-    ) -> bool {
-        let mut counter = 0;
-
-        for location in &self.visited_teams {
-            if !location {
-                counter += 1;
-            }
-        }
-
-        counter <= num_rounds_left
-    }
-
-    pub fn check_previous(
-        &self,
-        new_assignment: &Game,
-    ) -> bool {
-        let mut result = true;
-        if let Some(parent) = &self.parent {
-            result = parent.check_previous(new_assignment);
-        };
-        
-        let is_previous = self.is_previous(new_assignment);
-        result && !is_previous
-    }
-
-    pub fn pre_evaluate(
-        &self,
-        new_assignment: &Game,
-        upperbound: i128,
-    ) -> bool {
-        let mut score: i128 = self.score;
-
-        if let Some(parent) = &self.parent {
-            let from: i32 = parent.game.home_player - 1;
-            let to: i32 = new_assignment.home_player - 1;
-            score += self.dist[from as usize][to as usize];
-        }
-
-        score < upperbound
-    }
-
-    pub fn generate_children(
-        &self,
-        q1: i32,
-        q2: i32,
-        options: &'a Vec<&Game>,
-        upperbound: i128,
     ) -> Vec<&Game> {
-        let mut result = Vec::new();
-
-        let num_checks_q1 = q1 - 2;
-        let stop_round_q1 = self.round_index - num_checks_q1;
-
-        let num_checks_q2 = q2 - 2;
-        let stop_round_q2 = self.round_index - num_checks_q2;
-
-        for option in options {
-            let is_better = self.pre_evaluate(option, upperbound);
-            if !is_better {
-                continue;
-            }
-
-            let is_q1_feasible = self.check_q1(stop_round_q1, option);
-            if !is_q1_feasible {
-                continue;
-            }
-
-            let is_q2_feasible = self.check_q2(stop_round_q2, option);
-            if !is_q2_feasible {
-                continue;
-            }
-
-            let is_previous_feasible = self.check_previous(option);
-            if !is_previous_feasible {
-                continue;
-            }
-
-            result.push(*option);
-        }
-
-        result
+        self.rounds[(round_index - 1) as usize].as_vec()
     }
 }
 
-impl<'a> std::fmt::Debug for Node<'a> {
-    fn fmt(
-        &self,
-        f: &mut std::fmt::Formatter<'_>
-    ) -> std::fmt::Result {
-        if let Some(parent) = &self.parent {
-            write!(f, r#"{:?}
-({:?},{:?}) {}"#, parent, self.game.home_player, self.game.out_player, self.score)
-        } else {
-            write!(f, "({:?},{:?}) {:?}", self.game.home_player, self.game.out_player, self.score)
+struct Solution {
+    assignments: Vec<Vec<(i32, i32)>>,
+
+}
+
+impl Solution {
+    pub fn new(num_rounds: usize, num_umpire_teams: usize) -> Self {
+        Self {
+            assignments: vec![vec![(0, 0) ; num_umpire_teams] ; num_rounds],
         }
     }
 }
 
-impl<'a> std::fmt::Display for Node<'a> {
-    fn fmt(
-        &self,
-        f: &mut std::fmt::Formatter<'_>
-    ) -> std::fmt::Result {
-        if let Some(parent) = &self.parent {
-            write!(f, r#"{}
-({:?},{:?})"#, parent, self.game.home_player, self.game.out_player)
-        } else {
-            write!(f, "({:?},{:?})", self.game.home_player, self.game.out_player)
-        }
-    }
+pub fn branch_and_bound(
+    file_name: &str,
+    q1: i32,
+    q2: i32
+) -> i128 {
+    let data = read_data(format!("resources/{}.txt", file_name).as_str()).unwrap();
+    let model = Model::new(&data);
+
+    let mut result = 0;
+
+    let mut solution = Solution::new();
+    let (solution, result) = traverse(solution, result, 0, 0, Vec::new());
+
+    result
+}
+
+fn traverse(
+    mut solution: Solution,
+    result: i128,
+    current_umpire: i32,
+    current_round: i32,
+    banned_games: Vec<&Game>,
+) -> (Solution, i128) {
+    // STEP 1 : ASSIGN A ALLOWED GAME BASED ON
+    // - GLOBAL FEASIBILITY
+    // - Q1 CONSTRAINT
+    // - Q2 CONSTRAINT
+
+    (solution, result)
 }
