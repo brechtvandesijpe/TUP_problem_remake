@@ -163,20 +163,102 @@ impl Model {
         &self,
         round_index: i32,
     ) -> Vec<&Game> {
-        self.rounds[(round_index - 1) as usize].as_vec()
+        self.rounds[round_index as usize].as_vec()
     }
 }
 
 struct Solution {
     assignments: Vec<Vec<(i32, i32)>>,
+    pub num_umpires: usize,
+    pub num_rounds: usize,
+    score: i128,
+}
 
+impl std::fmt::Display for Solution {
+    fn fmt(
+        &self,
+        f: &mut std::fmt::Formatter<'_>
+    ) -> std::fmt::Result {
+        for round in &self.assignments {
+            for game in round {
+                write!(f, "{:?} ", game)?;
+            }
+            write!(f, "\n")?;
+        }
+        Ok(())
+    }
 }
 
 impl Solution {
-    pub fn new(num_rounds: usize, num_umpire_teams: usize) -> Self {
+    pub fn new(
+        num_rounds: usize,
+        num_umpires: usize) -> Self {
         Self {
-            assignments: vec![vec![(0, 0) ; num_umpire_teams] ; num_rounds],
+            assignments: vec![vec![(0, 0) ; num_umpires] ; num_rounds],
+            num_umpires,
+            num_rounds,
+            score: 0,
         }
+    }
+
+    pub fn get_home_player(
+        &self,
+        umpire_team: i32,
+        round: i32,
+    ) -> i32 {
+        self.assignments[round as usize][umpire_team as usize].0
+    }
+
+    pub fn get_out_player(
+        &self,
+        umpire_team: i32,
+        round: i32,
+    ) -> i32 {
+        self.assignments[round as usize][umpire_team as usize].1
+    }
+
+    pub fn check_assignment_score(
+        &self,
+        game: &Game,
+        umpire_team: i32,
+        round: i32,
+        data: &Data,
+    ) -> i128 {
+        if round == 0 {
+            return self.score;
+        }
+        
+        let previous_location = self.assignments[round  as usize][umpire_team as usize].0;
+        let extra_score = data.dist[(previous_location - 1) as usize][(game.home_player - 1) as usize];
+        self.score + extra_score
+    }
+
+    pub fn assign(
+        &mut self,
+        game: &Game,
+        umpire_team: i32,
+        round: i32,
+        data: &Data,
+    ) {
+        if round > 0 {
+            let previous_location = self.assignments[round as usize][umpire_team as usize].0;
+            let extra_score = data.dist[(previous_location - 1) as usize][(game.home_player - 1) as usize];
+            self.score += extra_score;
+        }
+        self.assignments[round  as usize][umpire_team as usize] = (game.home_player, game.out_player);
+    }
+
+    pub fn unassign(
+        &mut self,
+        game: &Game,
+        umpire_team: i32,
+        round: i32,
+        data: &Data,
+    ) {
+        let previous_location = self.assignments[round as usize][umpire_team as usize].0;
+        let extra_score = data.dist[(previous_location - 1) as usize][(game.home_player - 1) as usize];
+        self.score -= extra_score;
+        self.assignments[round as usize][umpire_team as usize] = (0, 0);
     }
 }
 
@@ -187,26 +269,100 @@ pub fn branch_and_bound(
 ) -> i128 {
     let data = read_data(format!("resources/{}.txt", file_name).as_str()).unwrap();
     let model = Model::new(&data);
-
-    let mut result = 0;
-
-    let mut solution = Solution::new();
-    let (solution, result) = traverse(solution, result, 0, 0, Vec::new());
-
-    result
+    let mut solution = Solution::new(model.num_rounds as usize, (data.num_teams / 2) as usize);
+    (solution, _) = traverse(solution, 0, 0, 0, q1, q2, &model, &data);
+    solution.score
 }
 
 fn traverse(
     mut solution: Solution,
-    result: i128,
+    mut upperbound: i128,
     current_umpire: i32,
     current_round: i32,
-    banned_games: Vec<&Game>,
+    q1: i32,
+    q2: i32,
+    model: &Model,
+    data: &Data,
 ) -> (Solution, i128) {
-    // STEP 1 : ASSIGN A ALLOWED GAME BASED ON
-    // - GLOBAL FEASIBILITY
-    // - Q1 CONSTRAINT
-    // - Q2 CONSTRAINT
+    println!("current_umpire = {}, current_round = {}", current_umpire, current_round);
+    println!("{}", solution);
+    let next_umpire = ((current_umpire + 1) % (solution.num_umpires as i32));
+    let next_round = if current_umpire == solution.num_umpires as i32 - 1 { current_round + 1 } else { current_round };
+    println!("next_umpire = {}, next_round = {}", next_umpire, next_round);
 
-    (solution, result)
+    for game in model.get_round(current_round) {
+        // FEASIBILITY CHECK OF THE GAMES:
+        // - GLOBAL FEASIBILITY
+        let mut global_feasible = true;
+        for round in 0..current_umpire {
+            if game.home_player == solution.get_home_player(current_umpire, round) {
+                global_feasible = false;
+                break;
+            }
+        }
+
+        if !global_feasible {
+            continue;
+        }
+
+        // - PREVIOUS UMPIRE ASSIGNMENTS FEASIBILITY
+        let mut assignment_feasible = true;
+        for umpire in 0..current_umpire {
+            if game.home_player == solution.get_home_player(umpire, current_round) && game.out_player == solution.get_out_player(umpire, current_round){
+                assignment_feasible = false;
+                break;
+            }
+        }
+
+        if !assignment_feasible {
+            continue;
+        }
+    
+        // - Q1 CONSTRAINT
+        let mut q1_feasible = true;
+        let stop_round_q1 = std::cmp::max(0, current_round - q1 + 1);
+        for round in stop_round_q1..current_round {
+            if game.home_player == solution.get_home_player(current_umpire, round) {
+                q1_feasible = false;
+                break;
+            }
+        }
+
+        if !q1_feasible {
+            continue;
+        }
+    
+        // - Q2 CONSTRAINT
+        let mut q2_feasible = true;
+        let stop_round_q2 = std::cmp::max(0, current_round - q2 + 1);
+        for round in stop_round_q2..current_round {
+            if game.home_player == solution.get_home_player(current_umpire, round) {
+                q2_feasible = false;
+                break;
+            }
+        }
+
+        if !q2_feasible {
+            continue;
+        }
+        
+        println!("current_umpire = {}, current_round = {}, game = {:?}", current_umpire, current_round, game);
+
+        if upperbound == 0 || solution.check_assignment_score(game, current_umpire, current_round, data) < upperbound {
+            solution.assign(game, current_umpire, current_round, data);
+
+            if !(current_umpire + 1 == solution.num_umpires as i32 && current_round + 1 == solution.num_rounds as i32) {
+                (solution, upperbound) = traverse(solution, upperbound, next_umpire, next_round, q1, q2, model, data);
+            } else {
+                if solution.score > upperbound {
+                    upperbound = solution.score;
+                } else {
+                    solution.unassign(game, current_umpire, current_round, data);
+                }
+            }
+            
+        }
+    }
+
+    (solution, upperbound)
 }

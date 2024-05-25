@@ -7,6 +7,26 @@
         {
             "type": "lldb",
             "request": "launch",
+            "name": "Cargo run 'TUP_problem_remake'",
+            "cargo": {
+                "args": [
+                    "run",
+                    "--package=TUP_problem_remake"
+                ],
+                "filter": {
+                    "name": "TUP_problem_remake",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "RUST_BACKTRACE": "1"
+            }
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
             "name": "Debug unit tests in library 'TUP_problem_remake'",
             "cargo": {
                 "args": [
