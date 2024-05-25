@@ -236,6 +236,11 @@ impl Solution {
         }
         
         let previous_location = self.assignments[(round - 1) as usize][umpire_team as usize].0;
+        
+        if previous_location <= 0 {
+            return 0;
+        }
+
         data.dist[(previous_location - 1) as usize][(next_location - 1) as usize]
     }
 
@@ -275,6 +280,15 @@ impl Solution {
     }
 }
 
+fn pretty_print(
+    matrix: &Vec<Vec<i128>>,
+) {
+    println!("--");
+    for row in matrix {
+        println!("{:?}", row);
+    }
+}
+
 pub fn branch_and_bound(
     file_name: &str,
     q1: i32,
@@ -282,13 +296,152 @@ pub fn branch_and_bound(
 ) -> i128 {
     let data = read_data(format!("resources/{}.txt", file_name).as_str()).unwrap();
     let model = Model::new(&data);
+
+    // let lowerbound: Arc<Mutex<Vec<Vec<i128>>>> = Arc::new(Mutex::new(vec![vec![0; model.num_rounds as usize]; model.num_rounds as usize]));
+    // let upperbound: Arc<Mutex<i128>> = Arc::new(Mutex::new(0));
+    
+    // CALCULATE LB_MATRIX
+    let mut round_lbs: Vec<Vec<i128>> = vec![vec![0; model.num_rounds as usize]; model.num_rounds as usize];
+
+    for k in 1..model.num_rounds {
+        let r = model.num_rounds - k - 1;
+        println!("r = {}, num_rounds = {}, k = {}", r, model.num_rounds, k);
+        let start_round = r as usize;
+        let end_round = (r + k) as usize;
+        println!("start_round = {}, end_round = {}", start_round, end_round);
+
+        let mut solution = Solution::new(model.num_rounds as usize, (data.num_teams / 2) as usize);
+        let best_solution = solution.clone();
+        let (best_solution, solution, upperbound) = 
+            traverse_lb(best_solution, solution, 0, 0, start_round as i32, q1, q2, &model, &data, start_round, end_round);
+
+        for r1 in (0..=r).rev() {
+            for r2 in (r + k)..model.num_rounds {
+                round_lbs[r1 as usize][r2 as usize] = 
+                    std::cmp::max(
+                        round_lbs[r1 as usize][r2 as usize],
+                        round_lbs[r1 as usize][r as usize] + upperbound + round_lbs[(r + k) as usize][r2 as usize]
+                    );
+            }
+        }
+
+        pretty_print(&round_lbs);
+    }
+
+
     let mut solution = Solution::new(model.num_rounds as usize, (data.num_teams / 2) as usize);
     let initial = model.get_round(0);
-    solution.fixate(initial);
     let best_solution = solution.clone();
-    let (best_solution, solution, upperbound) = traverse(best_solution, solution, 0, 0, 1, q1, q2, &model, &data);
-    println!("{}", best_solution);
-    upperbound
+    solution.fixate(initial);
+
+    // let best_solution = solution.clone();
+    // let (best_solution, solution, upperbound) = traverse(best_solution, solution, 0, 0, 1, q1, q2, &model, &data);
+    
+    // println!("{}", best_solution);
+    // upperbound
+    0
+}
+
+fn is_terminal_lb(
+    solution: &Solution,
+    current_umpire: i32,
+    current_round: i32,
+    end_round: usize,
+) -> bool {
+    // println!("current_umpire = {}, num_umpires = {}, current_round = {}, end_round = {}", current_umpire, solution.num_umpires, current_round, end_round);
+    current_umpire + 1 == solution.num_umpires as i32 && current_round == end_round as i32
+}
+
+fn traverse_lb(
+    mut best_solution: Solution,
+    mut solution: Solution,
+    mut upperbound: i128,
+    current_umpire: i32,
+    current_round: i32,
+    q1: i32,
+    q2: i32,
+    model: &Model,
+    data: &Data,
+    start_round: usize,
+    end_round: usize,
+) -> (Solution, Solution, i128) {
+    let next_umpire = (current_umpire + 1) % (solution.num_umpires as i32);
+    let next_round = if current_umpire == solution.num_umpires as i32 - 1 { current_round + 1 } else { current_round };
+
+    // println!("current_round = {}", current_round);
+    for game in model.get_round(current_round) {
+        // FEASIBILITY CHECK OF THE GAMES:
+        // - PREVIOUS UMPIRE ASSIGNMENTS FEASIBILITY
+        let mut assignment_feasible = true;
+        for umpire in 0..current_umpire {
+            if game.home_player == solution.get_home_player(umpire, current_round) && game.out_player == solution.get_out_player(umpire, current_round){
+                assignment_feasible = false;
+                break;
+            }
+        }
+
+        if !assignment_feasible {
+            continue;
+        }
+    
+        // - Q1 CONSTRAINT
+        let mut q1_feasible = true;
+        let stop_round_q1 = std::cmp::max(start_round as i32, current_round - q1 + 1);
+
+        for round in stop_round_q1..current_round {
+            if game.home_player == solution.get_home_player(current_umpire, round) {
+                q1_feasible = false;
+                break;
+            }
+        }
+
+        if !q1_feasible {
+            continue;
+        }
+    
+        // - Q2 CONSTRAINT
+        let mut q2_feasible = true;
+        let stop_round_q2 = std::cmp::max(start_round as i32, current_round - q2 + 1);
+        for round in stop_round_q2..current_round {
+            let home_player = solution.get_home_player(current_umpire, round);
+            let out_player = solution.get_out_player(current_umpire, round);
+            if game.home_player == home_player ||
+               game.home_player == out_player ||
+               game.out_player == home_player ||
+               game.out_player == out_player
+            {
+                q2_feasible = false;
+                break;
+            }
+        }
+
+        if !q2_feasible {
+            continue;
+        }
+        
+        let extra_distance = solution.get_extra_distance(game.home_player, current_umpire, current_round, data);
+        let lowerbound = 0;
+        
+        if solution.score + extra_distance + lowerbound > upperbound && upperbound != 0 {
+            continue;
+        }
+
+        solution.assign(game, current_umpire, current_round, data);
+        let is_terminal = is_terminal_lb(&solution, current_umpire, current_round, end_round);
+        // println!("is_terminal = {}", is_terminal);
+        if is_terminal {
+            if solution.score < upperbound || upperbound == 0 {
+                upperbound = solution.score;
+                best_solution = solution.clone();
+            }
+        } else {
+            // println!("next_round = {}, next_umpire = {}", next_round, next_umpire);
+            (best_solution, solution, upperbound) = traverse_lb(best_solution, solution, upperbound, next_umpire, next_round, q1, q2, model, data, start_round, end_round);
+        }
+        solution.unassign( current_umpire, current_round, data);
+    }
+
+    (best_solution, solution, upperbound)
 }
 
 fn is_terminal(
@@ -392,7 +545,6 @@ fn traverse(
         } else {
             (best_solution, solution, upperbound) = traverse(best_solution, solution, upperbound, next_umpire, next_round, q1, q2, model, data);
         }
-
         solution.unassign( current_umpire, current_round, data);
     }
 
