@@ -99,6 +99,12 @@ impl Game {
             out_player,
         }
     }
+
+    pub fn as_tuple(
+        &self,
+    ) -> (i32, i32) {
+        (self.home_player, self.out_player)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -167,6 +173,7 @@ impl Model {
     }
 }
 
+#[derive(Clone)]
 struct Solution {
     assignments: Vec<Vec<(i32, i32)>>,
     pub num_umpires: usize,
@@ -194,7 +201,7 @@ impl Solution {
         num_rounds: usize,
         num_umpires: usize) -> Self {
         Self {
-            assignments: vec![vec![(0, 0) ; num_umpires] ; num_rounds],
+            assignments: vec![vec![(0, 0); num_umpires]; num_rounds],
             num_umpires,
             num_rounds,
             score: 0,
@@ -217,20 +224,19 @@ impl Solution {
         self.assignments[round as usize][umpire_team as usize].1
     }
 
-    pub fn check_assignment_score(
+    pub fn get_extra_distance(
         &self,
-        game: &Game,
+        next_location: i32,
         umpire_team: i32,
         round: i32,
         data: &Data,
     ) -> i128 {
-        if round == 0 {
-            return self.score;
+        if round <= 0 {
+            return 0;
         }
         
-        let previous_location = self.assignments[round  as usize][umpire_team as usize].0;
-        let extra_score = data.dist[(previous_location - 1) as usize][(game.home_player - 1) as usize];
-        self.score + extra_score
+        let previous_location = self.assignments[(round - 1) as usize][umpire_team as usize].0;
+        data.dist[(previous_location - 1) as usize][(next_location - 1) as usize]
     }
 
     pub fn assign(
@@ -240,24 +246,22 @@ impl Solution {
         round: i32,
         data: &Data,
     ) {
-        if round > 0 {
-            let previous_location = self.assignments[round as usize][umpire_team as usize].0;
-            let extra_score = data.dist[(previous_location - 1) as usize][(game.home_player - 1) as usize];
-            self.score += extra_score;
-        }
-        self.assignments[round  as usize][umpire_team as usize] = (game.home_player, game.out_player);
+        // let current_val = self.assignments[round  as usize][umpire_team as usize];
+        // if current_val.0 != 0 || current_val.1 != 0 {
+        //     self.unassign(umpire_team, round, data);
+        // }
+
+        self.score += self.get_extra_distance(game.home_player, umpire_team, round, data);
+        self.assignments[round  as usize][umpire_team as usize] = game.as_tuple();
     }
 
     pub fn unassign(
         &mut self,
-        game: &Game,
         umpire_team: i32,
         round: i32,
         data: &Data,
     ) {
-        let previous_location = self.assignments[round as usize][umpire_team as usize].0;
-        let extra_score = data.dist[(previous_location - 1) as usize][(game.home_player - 1) as usize];
-        self.score -= extra_score;
+        self.score -= self.get_extra_distance(self.assignments[round as usize][umpire_team as usize].0, umpire_team, round, data);
         self.assignments[round as usize][umpire_team as usize] = (0, 0);
     }
 }
@@ -269,12 +273,23 @@ pub fn branch_and_bound(
 ) -> i128 {
     let data = read_data(format!("resources/{}.txt", file_name).as_str()).unwrap();
     let model = Model::new(&data);
-    let mut solution = Solution::new(model.num_rounds as usize, (data.num_teams / 2) as usize);
-    (solution, _) = traverse(solution, 0, 0, 0, q1, q2, &model, &data);
-    solution.score
+    let solution = Solution::new(model.num_rounds as usize, (data.num_teams / 2) as usize);
+    let best_solution = solution.clone();
+    let (best_solution, solution, upperbound) = traverse(best_solution, solution, 0, 0, 0, q1, q2, &model, &data);
+    println!("{}", best_solution);
+    upperbound
+}
+
+fn is_terminal(
+    solution: &Solution,
+    current_umpire: i32,
+    current_round: i32,
+) -> bool {
+    current_umpire + 1 == (solution.num_umpires as i32) - 1 && current_round + 1 == solution.num_rounds as i32
 }
 
 fn traverse(
+    mut best_solution: Solution,
     mut solution: Solution,
     mut upperbound: i128,
     current_umpire: i32,
@@ -283,12 +298,22 @@ fn traverse(
     q2: i32,
     model: &Model,
     data: &Data,
-) -> (Solution, i128) {
-    println!("current_umpire = {}, current_round = {}", current_umpire, current_round);
-    println!("{}", solution);
-    let next_umpire = ((current_umpire + 1) % (solution.num_umpires as i32));
+) -> (Solution, Solution, i128) {
+    let mut visited_teams: Vec<bool> = vec![false; data.num_teams as usize];
+    for round in 0..current_round {
+        visited_teams[(solution.get_home_player(current_umpire, round) - 1) as usize] = true;
+    }
+
+    let num_unvisited = visited_teams.iter().filter(|&v| *v == false).count();
+    if num_unvisited > model.num_rounds as usize - current_round as usize {
+        return (best_solution, solution, upperbound);
+    }
+
+    // println!("current_umpire = {}, current_round = {}", current_umpire, current_round);
+    // println!("{}", solution);
+    let next_umpire = (current_umpire + 1) % (solution.num_umpires as i32);
     let next_round = if current_umpire == solution.num_umpires as i32 - 1 { current_round + 1 } else { current_round };
-    println!("next_umpire = {}, next_round = {}", next_umpire, next_round);
+    // println!("next_umpire = {}, next_round = {}", next_umpire, next_round);
 
     for game in model.get_round(current_round) {
         // FEASIBILITY CHECK OF THE GAMES:
@@ -336,7 +361,8 @@ fn traverse(
         let mut q2_feasible = true;
         let stop_round_q2 = std::cmp::max(0, current_round - q2 + 1);
         for round in stop_round_q2..current_round {
-            if game.home_player == solution.get_home_player(current_umpire, round) {
+            if game.home_player == solution.get_home_player(current_umpire, round) ||
+               game.out_player == solution.get_out_player(current_umpire, round) {
                 q2_feasible = false;
                 break;
             }
@@ -346,23 +372,30 @@ fn traverse(
             continue;
         }
         
-        println!("current_umpire = {}, current_round = {}, game = {:?}", current_umpire, current_round, game);
+        // println!("current_umpire = {}, current_round = {}, game = {:?}", current_umpire, current_round, game);
 
-        if upperbound == 0 || solution.check_assignment_score(game, current_umpire, current_round, data) < upperbound {
-            solution.assign(game, current_umpire, current_round, data);
-
-            if !(current_umpire + 1 == solution.num_umpires as i32 && current_round + 1 == solution.num_rounds as i32) {
-                (solution, upperbound) = traverse(solution, upperbound, next_umpire, next_round, q1, q2, model, data);
-            } else {
-                if solution.score > upperbound {
-                    upperbound = solution.score;
-                } else {
-                    solution.unassign(game, current_umpire, current_round, data);
-                }
-            }
-            
+        
+        let extra_distance = solution.get_extra_distance(game.home_player, current_umpire, current_round, data);
+        let lowerbound = 0;
+        
+        if solution.score + extra_distance + lowerbound >= upperbound && upperbound != 0 {
+            continue;
         }
+
+        solution.assign(game, current_umpire, current_round, data);
+        if is_terminal(&solution, current_umpire, current_round) {
+            if solution.score < upperbound || upperbound == 0 {
+                upperbound = solution.score;
+                best_solution = solution.clone();
+            }
+        } else {
+            (best_solution, solution, upperbound) = traverse(best_solution, solution, upperbound, next_umpire, next_round, q1, q2, model, data);
+        }
+
+        solution.unassign( current_umpire, current_round, data);
+        // if !is_best {
+        // }
     }
 
-    (solution, upperbound)
+    (best_solution, solution, upperbound)
 }
