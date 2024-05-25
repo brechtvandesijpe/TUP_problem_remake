@@ -264,6 +264,15 @@ impl Solution {
         self.score -= self.get_extra_distance(self.assignments[round as usize][umpire_team as usize].0, umpire_team, round, data);
         self.assignments[round as usize][umpire_team as usize] = (0, 0);
     }
+
+    pub fn fixate(
+        &mut self,
+        round: Vec<&Game>,
+    ) {
+        for (i, game) in round.iter().enumerate() {
+            self.assignments[0][i] = game.as_tuple();
+        }
+    }
 }
 
 pub fn branch_and_bound(
@@ -273,9 +282,11 @@ pub fn branch_and_bound(
 ) -> i128 {
     let data = read_data(format!("resources/{}.txt", file_name).as_str()).unwrap();
     let model = Model::new(&data);
-    let solution = Solution::new(model.num_rounds as usize, (data.num_teams / 2) as usize);
+    let mut solution = Solution::new(model.num_rounds as usize, (data.num_teams / 2) as usize);
+    let initial = model.get_round(0);
+    solution.fixate(initial);
     let best_solution = solution.clone();
-    let (best_solution, solution, upperbound) = traverse(best_solution, solution, 0, 0, 0, q1, q2, &model, &data);
+    let (best_solution, solution, upperbound) = traverse(best_solution, solution, 0, 0, 1, q1, q2, &model, &data);
     println!("{}", best_solution);
     upperbound
 }
