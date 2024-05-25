@@ -305,7 +305,7 @@ fn traverse(
     }
 
     let num_unvisited = visited_teams.iter().filter(|&v| *v == false).count();
-    if num_unvisited > model.num_rounds as usize - current_round as usize {
+    if num_unvisited >= model.num_rounds as usize - current_round as usize {
         return (best_solution, solution, upperbound);
     }
 
@@ -317,19 +317,6 @@ fn traverse(
 
     for game in model.get_round(current_round) {
         // FEASIBILITY CHECK OF THE GAMES:
-        // - GLOBAL FEASIBILITY
-        // let mut global_feasible = true;
-        // for round in 0..current_umpire {
-        //     if game.home_player == solution.get_home_player(current_umpire, round) {
-        //         global_feasible = false;
-        //         break;
-        //     }
-        // }
-
-        // if !global_feasible {
-        //     continue;
-        // }
-
         // - PREVIOUS UMPIRE ASSIGNMENTS FEASIBILITY
         let mut assignment_feasible = true;
         for umpire in 0..current_umpire {
@@ -381,7 +368,7 @@ fn traverse(
         let extra_distance = solution.get_extra_distance(game.home_player, current_umpire, current_round, data);
         let lowerbound = 0;
         
-        if solution.score + extra_distance + lowerbound >= upperbound && upperbound != 0 {
+        if solution.score + extra_distance + lowerbound > upperbound && upperbound != 0 {
             continue;
         }
 
