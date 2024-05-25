@@ -8,5 +8,5 @@ const Q2: i32 = 2;
 const FILE_NAME: &str = "umps8";
 
 fn main() {
-    println!("result for {} {} {} = {}", FILE_NAME, Q1, Q2, branch_and_bound(FILE_NAME, Q1, Q2));
+    println!("result for {}_{}_{} = {}", FILE_NAME, Q1, Q2, branch_and_bound(FILE_NAME, Q1, Q2));
 }   

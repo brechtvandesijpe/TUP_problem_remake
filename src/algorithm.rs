@@ -285,7 +285,7 @@ fn is_terminal(
     current_umpire: i32,
     current_round: i32,
 ) -> bool {
-    current_umpire + 1 == (solution.num_umpires as i32) - 1 && current_round + 1 == solution.num_rounds as i32
+    current_umpire + 1 == solution.num_umpires as i32 && current_round + 1 == solution.num_rounds as i32
 }
 
 fn traverse(
@@ -346,6 +346,7 @@ fn traverse(
         // - Q1 CONSTRAINT
         let mut q1_feasible = true;
         let stop_round_q1 = std::cmp::max(0, current_round - q1 + 1);
+
         for round in stop_round_q1..current_round {
             if game.home_player == solution.get_home_player(current_umpire, round) {
                 q1_feasible = false;
@@ -362,7 +363,9 @@ fn traverse(
         let stop_round_q2 = std::cmp::max(0, current_round - q2 + 1);
         for round in stop_round_q2..current_round {
             if game.home_player == solution.get_home_player(current_umpire, round) ||
-               game.out_player == solution.get_out_player(current_umpire, round) {
+               game.out_player == solution.get_out_player(current_umpire, round) ||
+               game.out_player == solution.get_home_player(current_umpire, round) ||
+               game.home_player == solution.get_out_player(current_umpire, round) {
                 q2_feasible = false;
                 break;
             }
@@ -371,9 +374,6 @@ fn traverse(
         if !q2_feasible {
             continue;
         }
-        
-        // println!("current_umpire = {}, current_round = {}, game = {:?}", current_umpire, current_round, game);
-
         
         let extra_distance = solution.get_extra_distance(game.home_player, current_umpire, current_round, data);
         let lowerbound = 0;
@@ -393,8 +393,6 @@ fn traverse(
         }
 
         solution.unassign( current_umpire, current_round, data);
-        // if !is_best {
-        // }
     }
 
     (best_solution, solution, upperbound)
