@@ -318,17 +318,17 @@ fn traverse(
     for game in model.get_round(current_round) {
         // FEASIBILITY CHECK OF THE GAMES:
         // - GLOBAL FEASIBILITY
-        let mut global_feasible = true;
-        for round in 0..current_umpire {
-            if game.home_player == solution.get_home_player(current_umpire, round) {
-                global_feasible = false;
-                break;
-            }
-        }
+        // let mut global_feasible = true;
+        // for round in 0..current_umpire {
+        //     if game.home_player == solution.get_home_player(current_umpire, round) {
+        //         global_feasible = false;
+        //         break;
+        //     }
+        // }
 
-        if !global_feasible {
-            continue;
-        }
+        // if !global_feasible {
+        //     continue;
+        // }
 
         // - PREVIOUS UMPIRE ASSIGNMENTS FEASIBILITY
         let mut assignment_feasible = true;
@@ -362,10 +362,13 @@ fn traverse(
         let mut q2_feasible = true;
         let stop_round_q2 = std::cmp::max(0, current_round - q2 + 1);
         for round in stop_round_q2..current_round {
-            if game.home_player == solution.get_home_player(current_umpire, round) ||
-               game.out_player == solution.get_out_player(current_umpire, round) ||
-               game.out_player == solution.get_home_player(current_umpire, round) ||
-               game.home_player == solution.get_out_player(current_umpire, round) {
+            let home_player = solution.get_home_player(current_umpire, round);
+            let out_player = solution.get_out_player(current_umpire, round);
+            if game.home_player == home_player ||
+               game.home_player == out_player ||
+               game.out_player == home_player ||
+               game.out_player == out_player
+            {
                 q2_feasible = false;
                 break;
             }

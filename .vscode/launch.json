@@ -7,11 +7,10 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Cargo run 'TUP_problem_remake'",
+            "name": "RUN MAIN",
             "cargo": {
                 "args": [
-                    "run",
-                    "--package=TUP_problem_remake"
+                    "run"
                 ],
                 "filter": {
                     "name": "TUP_problem_remake",
@@ -19,15 +18,12 @@
                 }
             },
             "args": [],
-            "cwd": "${workspaceFolder}",
-            "env": {
-                "RUST_BACKTRACE": "1"
-            }
+            "cwd": "${workspaceFolder}"
         },
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in library 'TUP_problem_remake'",
+            "name": "DEBUG TESTS (LIB)",
             "cargo": {
                 "args": [
                     "test",
@@ -46,10 +42,11 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'TUP_problem_remake'",
+            "name": "DEBUG TESTS (BIN)",
             "cargo": {
                 "args": [
-                    "build",
+                    "test",
+                    "--no-run",
                     "--bin=TUP_problem_remake",
                     "--package=TUP_problem_remake"
                 ],
@@ -64,11 +61,10 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'TUP_problem_remake'",
+            "name": "DEBUG MAIN",
             "cargo": {
                 "args": [
-                    "test",
-                    "--no-run",
+                    "build",
                     "--bin=TUP_problem_remake",
                     "--package=TUP_problem_remake"
                 ],
