@@ -251,10 +251,10 @@ impl Solution {
         round: i32,
         data: &Data,
     ) {
-        // let current_val = self.assignments[round  as usize][umpire_team as usize];
-        // if current_val.0 != 0 || current_val.1 != 0 {
-        //     self.unassign(umpire_team, round, data);
-        // }
+        let current_val = self.assignments[round  as usize][umpire_team as usize];
+        if current_val.0 != 0 || current_val.1 != 0 {
+            self.unassign(umpire_team, round, data);
+        }
 
         self.score += self.get_extra_distance(game.home_player, umpire_team, round, data);
         self.assignments[round  as usize][umpire_team as usize] = game.as_tuple();
@@ -273,9 +273,10 @@ impl Solution {
     pub fn fixate(
         &mut self,
         round: Vec<&Game>,
+        start_round: usize,
     ) {
         for (i, game) in round.iter().enumerate() {
-            self.assignments[0][i] = game.as_tuple();
+            self.assignments[start_round][i] = game.as_tuple();
         }
     }
 }
@@ -315,16 +316,17 @@ pub fn branch_and_bound(
                 &data_clone_lb,
                 q1,
                 q2,
-                round_lbs_clone
+                &round_lbs_clone
             )
         }
     );
 
     handle.join().unwrap();
+    pretty_print(&round_lbs.lock().unwrap());
 
     let mut solution = Solution::new(model.num_rounds as usize, (data.num_teams / 2) as usize);
     let initial = model.get_round(0);
-    solution.fixate(initial);
+    solution.fixate(initial, 0);
 
     let best_solution = solution.clone();
     let (best_solution, _, upperbound) =
@@ -341,7 +343,7 @@ pub fn branch_and_bound(
             &round_lbs
         );
     
-    println!("{}", best_solution);
+    // println!("{}", best_solution);
     upperbound
 }
 
@@ -350,7 +352,7 @@ pub fn calculate_lb(
     data: &Data,
     q1: i32,
     q2: i32,
-    round_lbs: Arc<Mutex<Vec<Vec<i128>>>>,
+    round_lbs: &Arc<Mutex<Vec<Vec<i128>>>>,
 ) {
     for k in 1..model.num_rounds {
         let r = model.num_rounds - k - 1;
@@ -359,26 +361,30 @@ pub fn calculate_lb(
         let end_round = (r + k) as usize;
         // println!("start_round = {}, end_round = {}", start_round, end_round);
 
-        let solution = Solution::new(model.num_rounds as usize, (data.num_teams / 2) as usize);
+        let mut solution = Solution::new(model.num_rounds as usize, (data.num_teams / 2) as usize);
+        let initial = model.get_round(start_round as i32);
+        solution.fixate(initial, start_round);
+
         let (_, upperbound) = 
             traverse_lb(
                 solution,
                 0,
                 0,
-                start_round as i32,
+                (start_round + 1) as i32,
                 q1,
                 q2,
                 &model,
                 &data,
                 start_round,
                 end_round,
-                &round_lbs
+                round_lbs
             );
+        println!("r = {}", upperbound);
 
         let mut matrix = round_lbs.lock().unwrap();
         for r1 in (0..=r).rev() {
             for r2 in (r + k)..model.num_rounds {
-                matrix[r1 as usize][r2 as usize] = 
+                *matrix[r1 as usize][r2 as usize].borrow_mut() = 
                     std::cmp::max(
                         matrix[r1 as usize][r2 as usize],
                         matrix[r1 as usize][r as usize] + upperbound + matrix[(r + k) as usize][r2 as usize]
@@ -386,7 +392,7 @@ pub fn calculate_lb(
             }
         }
 
-        pretty_print(&matrix);
+        // pretty_print(&matrix);
     }
 }
 
@@ -437,7 +443,8 @@ fn traverse_lb(
         let stop_round_q1 = std::cmp::max(start_round as i32, current_round - q1 + 1);
 
         for round in stop_round_q1..current_round {
-            if game.home_player == solution.get_home_player(current_umpire, round) {
+            let home_player = solution.get_home_player(current_umpire, round);
+            if game.home_player == home_player {
                 q1_feasible = false;
                 break;
             }
@@ -467,15 +474,16 @@ fn traverse_lb(
             continue;
         }
         
-        let extra_distance = solution.get_extra_distance(game.home_player, current_umpire, current_round, data);
-        // let lowerbound = round_lbs.lock().unwrap()[current_round as usize][solution.num_umpires - 1 as usize];
-        let lowerbound = 0;
+        solution.assign(game, current_umpire, current_round, data);
+        // let extra_distance = solution.get_extra_distance(game.home_player, current_umpire, current_round, data);
+        let lowerbound = round_lbs.lock().unwrap()[current_round as usize][end_round];
+        // let lowerbound = 0;
 
-        if solution.score + extra_distance + lowerbound > upperbound && upperbound != 0 {
+        if solution.score + lowerbound >= upperbound && upperbound != 0 {
+            solution.unassign( current_umpire, current_round, data);
             continue;
         }
 
-        solution.assign(game, current_umpire, current_round, data);
         let is_terminal = is_terminal_lb(&solution, current_umpire, current_round, end_round);
         // println!("is_terminal = {}", is_terminal);
         if is_terminal {
@@ -592,9 +600,9 @@ fn traverse(
         }
         
         let extra_distance = solution.get_extra_distance(game.home_player, current_umpire, current_round, data);
-        let lowerbound = round_lbs.lock().unwrap()[current_round as usize][solution.num_umpires - 1 as usize];
+        let lowerbound = round_lbs.lock().unwrap()[current_round as usize][(solution.num_rounds - 1) as usize];
         
-        if solution.score + extra_distance + lowerbound > upperbound && upperbound != 0 {
+        if solution.score + extra_distance + lowerbound >= upperbound && upperbound != 0 {
             continue;
         }
 
