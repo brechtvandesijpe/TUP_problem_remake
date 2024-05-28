@@ -5,14 +5,26 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::borrow::BorrowMut;
 
+// DEBUGGING
+const ENABLE_DEBUG_PRINT: bool = false;
+const ENABLE_UPDATE_PRINTS: bool = true;
+
+// LOWERBOUND CALCULATIONS
 const ENABLE_LOWERBOUND: bool = true;
-const ENABLE_UPPERBOUND: bool = true;
+const ENABLE_LOWERBOUND_PRUNING: bool = true;
+const PARRALLELIZE_LOWERBOUND: bool = true;
+const FIXATE_LB: bool = true;
+
+// GLOBAL PROBLEM
+const ENABLE_UPPERBOUND_PRUNING: bool = true;
+const FIXATE_GLOBAL: bool = true;
+
+// CONSTRAINTS
 const ENABLE_GLOBAL_PRUNING: bool = true;
 const ENABLE_ASSIGNMENT_PRUNING: bool = true;
 const ENABLE_Q1_PRUNING: bool = true;
 const ENABLE_Q2_PRUNING: bool = true;
-const FIXATE_GLOBAL: bool = true;
-const FIXATE_LB: bool = true;
+
 
 #[derive(Debug, Clone)]
 pub struct Data {
@@ -287,7 +299,6 @@ impl Solution {
 fn pretty_print(
     matrix: &Vec<Vec<i128>>
 ) {
-    println!("--");
     for row in matrix {
         println!("{:?}", row);
     }
@@ -310,20 +321,25 @@ pub fn branch_and_bound(
     let data_clone = Arc::new(data.clone());
     let data_clone_lb = Arc::clone(&data_clone);
 
-    let handle = thread::spawn(
-        move || {
-            calculate_lb(
-                &model_clone_lb,
-                &data_clone_lb,
-                q1,
-                q2,
-                &round_lbs_clone
-            )
+    if ENABLE_LOWERBOUND {
+        let handle = thread::spawn(
+            move || {
+                calculate_lb(
+                    &model_clone_lb,
+                    &data_clone_lb,
+                    q1,
+                    q2,
+                    &round_lbs_clone
+                )
+            }
+        );
+    
+        if !PARRALLELIZE_LOWERBOUND {
+            handle.join().unwrap();
         }
-    );
 
-    handle.join().unwrap();
-    pretty_print(&round_lbs.lock().unwrap());
+        pretty_print(&round_lbs.lock().unwrap());
+    }
 
     let mut solution = Solution::new(model.num_rounds as usize, (data.num_teams / 2) as usize);
     let initial = model.get_round(0);
@@ -338,7 +354,7 @@ pub fn branch_and_bound(
     };
 
     let best_solution = solution.clone();
-    let (best_solution, best_score, _, upperbound) =
+    let (_, best_score, _, _) =
         traverse(
             best_solution,
             999999999,
@@ -385,7 +401,7 @@ pub fn calculate_lb(
 
         let best_solution = solution.clone();
         
-        let (best_solution, _, _, upperbound) = 
+        let (best_solution, _, _, _) = 
             traverse_lb(
                 best_solution,
                 999999999,
@@ -402,8 +418,8 @@ pub fn calculate_lb(
                 round_lbs
             );
 
-        println!("Score = {}", best_solution.score);
-        println!("{}", best_solution);
+        // println!("Score = {}", best_solution.score);
+        // println!("{}", best_solution);
 
         let mut matrix = round_lbs.lock().unwrap();
         for r1 in (0..=r).rev() {
@@ -424,9 +440,11 @@ fn is_terminal_lb(
     solution: &Solution,
     current_umpire: i32,
     current_round: i32,
+    round_lbs: &Arc<Mutex<Vec<Vec<i128>>>>,
     end_round: usize,
+    upperbound: i128,
 ) -> bool {
-    // println!("current_umpire = {}, num_umpires = {}, current_round = {}, end_round = {}", current_umpire, solution.num_umpires, current_round, end_round);
+    let lowerbound = round_lbs.lock().unwrap()[current_round as usize][end_round];
     current_umpire + 1 == solution.num_umpires as i32 && current_round == end_round as i32
 }
 
@@ -509,10 +527,9 @@ fn traverse_lb(
         }
         
         solution.assign(game, current_umpire, current_round, data);
-        // let extra_distance = solution.get_extra_distance(game.home_player, current_umpire, current_round, data);
         let mut lowerbound = round_lbs.lock().unwrap()[current_round as usize][end_round];
 
-        if !ENABLE_LOWERBOUND {
+        if !ENABLE_LOWERBOUND_PRUNING {
             lowerbound = 0;
         }
 
@@ -521,13 +538,12 @@ fn traverse_lb(
             continue;
         }
 
-        let is_terminal = is_terminal_lb(&solution, current_umpire, current_round, end_round);
-        // println!("is_terminal = {}", is_terminal);
+        let is_terminal = is_terminal_lb(&solution, current_umpire, current_round,  round_lbs, end_round, upperbound);
         if is_terminal {
             if solution.score < best_score {
                 best_score = solution.score;
                 
-                if ENABLE_UPPERBOUND {
+                if ENABLE_UPPERBOUND_PRUNING {
                     upperbound = solution.score;
                 }
 
@@ -562,8 +578,12 @@ fn is_terminal(
     solution: &Solution,
     current_umpire: i32,
     current_round: i32,
+    round_lbs: &Arc<Mutex<Vec<Vec<i128>>>>,
+    end_round: usize,
+    upperbound: i128,
 ) -> bool {
-    current_umpire + 1 == solution.num_umpires as i32 && current_round + 1 == solution.num_rounds as i32
+    let lowerbound = round_lbs.lock().unwrap()[current_round as usize][end_round];
+    lowerbound == upperbound || current_umpire + 1 == solution.num_umpires as i32 && current_round + 1 == solution.num_rounds as i32
 }
 
 fn traverse(
@@ -579,6 +599,10 @@ fn traverse(
     data: &Data,
     round_lbs: &Arc<Mutex<Vec<Vec<i128>>>>,
 ) -> (Solution, i128, Solution, i128) {
+    if ENABLE_DEBUG_PRINT {
+        println!("current_umpire = {}, current_round = {}, best_score = {}, upperbound = {}", current_umpire, current_round, best_score, upperbound); 
+    }
+
     if ENABLE_GLOBAL_PRUNING {
         let mut visited_teams: Vec<bool> = vec![false; data.num_teams as usize];
         for round in 0..current_round {
@@ -586,16 +610,13 @@ fn traverse(
         }
 
         let num_unvisited = visited_teams.iter().filter(|&v| *v == false).count();
-        if num_unvisited >= model.num_rounds as usize - current_round as usize {
+        if num_unvisited >= (model.num_rounds - current_round + 1) as usize {
             return (best_solution, best_score, solution, upperbound);
         }
     }
 
-    // println!("current_umpire = {}, current_round = {}", current_umpire, current_round);
-    // println!("{}", solution);
     let next_umpire = (current_umpire + 1) % (solution.num_umpires as i32);
     let next_round = if current_umpire == solution.num_umpires as i32 - 1 { current_round + 1 } else { current_round };
-    // println!("next_umpire = {}, next_round = {}", next_umpire, next_round);
 
     for game in model.get_round(current_round) {
         // FEASIBILITY CHECK OF THE GAMES:
@@ -635,13 +656,15 @@ fn traverse(
         if ENABLE_Q2_PRUNING {
             let mut q2_feasible = true;
             let stop_round_q2 = std::cmp::max(0, current_round - q2 + 1);
+
             for round in stop_round_q2..current_round {
                 let home_player = solution.get_home_player(current_umpire, round);
                 let out_player = solution.get_out_player(current_umpire, round);
+
                 if game.home_player == home_player ||
-                game.home_player == out_player ||
-                game.out_player == home_player ||
-                game.out_player == out_player
+                   game.home_player == out_player  ||
+                   game.out_player  == home_player ||
+                   game.out_player  == out_player
                 {
                     q2_feasible = false;
                     break;
@@ -656,7 +679,7 @@ fn traverse(
         let extra_distance = solution.get_extra_distance(game.home_player, current_umpire, current_round, data);
         let mut lowerbound = round_lbs.lock().unwrap()[current_round as usize][(solution.num_rounds - 1) as usize];
         
-        if !ENABLE_LOWERBOUND {
+        if !ENABLE_LOWERBOUND_PRUNING {
             lowerbound = 0;
         }
 
@@ -665,11 +688,15 @@ fn traverse(
         }
 
         solution.assign(game, current_umpire, current_round, data);
-        if is_terminal(&solution, current_umpire, current_round) {
+        if is_terminal(&solution, current_umpire, current_round, round_lbs, solution.num_rounds - 1, upperbound) {
             if solution.score < best_score {
                 best_score = solution.score;
-                
-                if ENABLE_UPPERBOUND {
+
+                if ENABLE_UPDATE_PRINTS {
+                    println!("best_score = {}", best_score);
+                }
+
+                if ENABLE_UPPERBOUND_PRUNING {
                     upperbound = solution.score;
                 }
 
