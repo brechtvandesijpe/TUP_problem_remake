@@ -40,6 +40,8 @@ public class Tree {
 
     private final Map<BranchStrategy, Runnable> strategyMap = new HashMap<>();
 
+    private int skips = 0;
+
     public Tree(Instance instance, int startRoundIndex, int endRoundIndex, boolean isSub) {
         this.isSub = isSub;
         this.instance = instance;
@@ -52,7 +54,6 @@ public class Tree {
         this.pruner = new Pruner(this);
     }
 
-
     /**
      * Initiates the global traversal (all rounds)
      */
@@ -60,6 +61,7 @@ public class Tree {
     public void startGlobalTraversal() {
         preventSolutionRotation();
         if (LOWERBOUND_ENABLED) {
+            //System.out.println("wel lowerbound");
             CompletableFuture<Void> lowerboundFuture = ASYNC ? startLowerBoundCalculationAsync() : null;
             performTraversal(0, startRoundIndex + 1);
             cancelLowerBoundCalculation(lowerboundFuture);
@@ -188,6 +190,7 @@ public class Tree {
                 //System.out.println("PartialDist: " + partialDistance + ", upperb: " + upperbound);
                 if (partialDistance + lowerbound >= upperbound) {
                     unassign(a, umpire);
+                    skips++;
                     continue; // Prune the branch
                 }
 
@@ -219,6 +222,7 @@ public class Tree {
         gameUmpireLookup[gameId] = umpire;
         umpireScheduleByRound[umpire][roundIndex] = gameId;
         partialDistance += getInterStadiumDistance(gameIdPreviousRound, gameId);
+        // System.out.println("partial distance after assignment: " + partialDistance);
     }
 
     /**
@@ -230,6 +234,7 @@ public class Tree {
         int previousRoundIndex = roundIndex - 1;
         int gameIdPreviousRound = umpireScheduleByRound[umpire][previousRoundIndex];
         partialDistance -= getInterStadiumDistance(gameIdPreviousRound, gameId);
+        // System.out.println("partial distance after unassignment: " + partialDistance);
     }
 
     /**
@@ -237,12 +242,16 @@ public class Tree {
      */
 
     public void preventSolutionRotation() {
-        IntStream.range(0, NUM_UMPIRES).forEach(umpireId -> {
-            int gameId = branchStart + umpireId;
-            umpireScheduleByRound[umpireId][startRoundIndex] = gameId;
-            gameUmpireLookup[gameId] = umpireId;
-        });
-        //System.out.println("Fixed round " + startRoundIndex);
+        if(PREVENT_SOLUTION_ROTATION) {
+            IntStream.range(0, NUM_UMPIRES).forEach(umpireId -> {
+                int gameId = branchStart + umpireId;
+                umpireScheduleByRound[umpireId][startRoundIndex] = gameId;
+                gameUmpireLookup[gameId] = umpireId;
+            });
+            //System.out.println("Fixed round " + startRoundIndex);
+        }else{
+            // don't do anything
+        }
     }
 
     // ********** EVALUATION

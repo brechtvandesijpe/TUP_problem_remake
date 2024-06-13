@@ -11,6 +11,7 @@ import static model.Instance.determineGameForPlayer;
 import static model.Instance.getGame;
 
 public class Pruner {
+
     private final Tree tree;
     private HashSet<Integer> prunedGames;
     private int startRoundForQ1Constraint;

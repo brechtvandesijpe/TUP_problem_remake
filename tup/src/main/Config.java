@@ -23,6 +23,7 @@ public class Config {
     public static MetaType META_HEURISTIC = MetaType.STEEPEST_DESCENT;
     public static LowerboundMatchType LB_MATCH = LowerboundMatchType.MATCH_ALGORITHM;
     public static boolean MATCH_LOWERBOUND = true;
+    public static boolean PREVENT_SOLUTION_ROTATION = true;
 
     // SETTINGS DEBUGGING
     public static boolean DEBUG_TREE = false;
