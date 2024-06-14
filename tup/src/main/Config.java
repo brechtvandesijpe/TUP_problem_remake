@@ -25,6 +25,7 @@ public class Config {
     public static boolean MATCH_LOWERBOUND = true;
     public static boolean PREVENT_SOLUTION_ROTATION = true;
     public static boolean ENABLE_PARTIAL_MATCHING = true;
+    public static boolean ENABLE_HASHING = true;
 
     // SETTINGS DEBUGGING
     public static boolean DEBUG_TREE = false;
@@ -36,6 +37,7 @@ public class Config {
     public static boolean PRINT_GAP = false;
     public static boolean PRINT_PRUNING_INFO = false;
     public static boolean DEBUG_MATCHER = false;
+    public static boolean PRINT_HIT_RATIO = false;
 
     // PARAMETERS
     public static int INFEASIBLE_WEIGHT = 10;

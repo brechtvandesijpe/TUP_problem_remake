@@ -1,14 +1,18 @@
 package problem;
 
+import main.Config;
 import model.Game;
 import model.Instance;
 import subproblem.match.Match;
 
 import java.util.BitSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.IntStream;
 
 import static main.Config.*;
 import static model.Instance.*;
+import static problem.Utility.blend;
 import static subproblem.match.MatchFactory.createMatchAlgorithm;
 
 
@@ -28,16 +32,47 @@ public class Matcher {
     private int subGraphSize = 0;
     private final int[][] freeIndices = new int[NUM_UMPIRES][2];
     private final int INFEASIBLE = 9999999;
+    private int cacheHits = 0;
+    private int cacheMisses = 0;
+    private final Map<Integer, Integer> previouslySolved = new HashMap<>();
 
     public Matcher(Instance instance){
         this.instance = instance;
     }
 
     public int calculatePartialMatchingCost(BitSet vec, int subGraphSize, int roundIndex) {
+        if(PRINT_HIT_RATIO) {
+            printCacheHitRatio();
+        }
+
         this.branchStart = NUM_UMPIRES * roundIndex;
         this.subGraphSize = subGraphSize;
-        makeSubGraph(vec);
-        return calculateDistance();
+        if (ENABLE_HASHING) {
+            int partialMatchingDistance;
+            int key = blend(roundIndex, vec);
+            Integer cached = getValueFromCache(key);
+            if (cached != null) {
+                cacheHits++;
+                if (DEBUG_MATCHER) {
+                    System.out.println("Cache hit, " + cacheHits);
+                }
+                partialMatchingDistance = cached;
+            } else {
+                cacheMisses++;
+                if (DEBUG_MATCHER) {
+                    System.out.println("Cache miss, " + cacheMisses);
+                }
+
+                makeSubGraph(vec);
+                //printSubGraph();
+                partialMatchingDistance = calculateDistance();
+                saveValueToCache(key, partialMatchingDistance);
+            }
+            return partialMatchingDistance;
+        } else {
+            makeSubGraph(vec);
+            return calculateDistance();
+        }
     }
 
     public void makeSubGraph(BitSet vec) {
@@ -85,6 +120,20 @@ public class Matcher {
         Game g2 = getGame(nextBranchStart + gameId2);
         int interStadiumDist = getInterStadiumDistance(g1, g2);
         return isFeasible(g1, g2) ? interStadiumDist : INFEASIBLE;
+    }
+
+    public double printCacheHitRatio() {
+        double hitRatio = (double) cacheHits / (cacheHits + cacheMisses);
+        System.out.println(Config.red + "Hit Ratio of Cache: " + hitRatio + ". " + reset);
+        return hitRatio;
+    }
+
+    public void saveValueToCache(int key, int value) {
+        previouslySolved.put(key, value);
+    }
+
+    public Integer getValueFromCache(int key) {
+        return previouslySolved.get(key);
     }
 
     @Override
