@@ -24,6 +24,7 @@ public class Config {
     public static LowerboundMatchType LB_MATCH = LowerboundMatchType.MATCH_ALGORITHM;
     public static boolean MATCH_LOWERBOUND = true;
     public static boolean PREVENT_SOLUTION_ROTATION = true;
+    public static boolean ENABLE_PARTIAL_MATCHING = true;
 
     // SETTINGS DEBUGGING
     public static boolean DEBUG_TREE = false;
@@ -33,8 +34,9 @@ public class Config {
     public static boolean DEBUG_LOWERBOUND_MATCHER = false;
     public static boolean PRINT_LB_ARRAY = false;
     public static boolean PRINT_GAP = false;
-    public static boolean PRINT_PRUNING_INFO = true;
+    public static boolean PRINT_PRUNING_INFO = false;
     public static boolean DEBUG_MATCHER = false;
+
     // PARAMETERS
     public static int INFEASIBLE_WEIGHT = 10;
     public static int UNASSIGNED = -99999;

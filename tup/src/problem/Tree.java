@@ -45,6 +45,9 @@ public class Tree {
     private final Map<BranchStrategy, Runnable> strategyMap = new HashMap<>();
 
     private int skips = 0;
+    private int numSkippedBranches = 0;
+    private int numSkippedBranchesAfterPM = 0;
+    private int numSkippedBranchesBeforePM = 0;
 
     public Tree(Instance instance, int startRoundIndex, int endRoundIndex, boolean isSub) {
         this.isSub = isSub;
@@ -173,6 +176,15 @@ public class Tree {
             String currentTimeStamp = dateFormat.format(new Date());
             System.out.println(lightGrey + "[" + currentTimeStamp + "]" + reset + " GAP: " + df.format(gapPercentage) + ", LB: " + lowerboundCalculator.roundLBs[0][NUM_ROUNDS - 1] + ", UB: " + upperbound + orange + " [UB ↓]" + reset);
         }
+        if (PRINT_PRUNING_INFO) {
+            printPrunedBranches();
+        }
+    }
+
+    public void printPrunedBranches() {
+        System.out.println("Num pruned branches before partial matching: " + numSkippedBranchesBeforePM);
+        System.out.println("Num pruned branches after partial matching: " + numSkippedBranchesAfterPM);
+        System.out.println("Total: " + numSkippedBranches);
     }
 
     /**
@@ -195,18 +207,22 @@ public class Tree {
                 //System.out.println("PartialDist: " + partialDistance + ", upperb: " + upperbound);
                 if (!isPromisingBeforePartialMatch()) {
                     unassign(a, umpire);
-                    skips++;
+                    numSkippedBranches++;
+                    numSkippedBranchesBeforePM++;
                     continue; // Prune the branch
                 }
 
-                // Calculate schedule
-                BitSet vec = calculateVec(umpire, currentRoundIndex, umpireScheduleByRound);
-                int subgraphSize = NUM_UMPIRES - 1 - umpire;
-                partialMatchingDistance = matcher.calculatePartialMatchingCost(vec, subgraphSize, currentRoundIndex - 1);
-                System.out.println("partialMatchingDistance: " +  partialMatchingDistance);
-                partialDistance = 6666;
+                if (ENABLE_PARTIAL_MATCHING) {
+                    // Calculate schedule
+                    BitSet vec = calculateVec(umpire, currentRoundIndex, umpireScheduleByRound);
+                    int subgraphSize = NUM_UMPIRES - 1 - umpire;
+                    partialMatchingDistance = matcher.calculatePartialMatchingCost(vec, subgraphSize, currentRoundIndex - 1);
+                }
+                // System.out.println("partialMatchingDistance: " +  partialMatchingDistance);
                 if (!isPromisingAfterPartialMatch()) {
                     unassign(a, umpire);
+                    numSkippedBranches++;
+                    numSkippedBranchesAfterPM++;
                     continue; // Prune the branch
                 }
 
