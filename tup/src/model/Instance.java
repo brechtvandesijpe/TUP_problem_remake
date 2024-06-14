@@ -42,6 +42,10 @@ public class Instance {
         return distances[games[currentGameId].getHomePlayerId()][games[previousGameId].getHomePlayerId()];
     }
 
+    public static int getInterStadiumDistance(Game previousGame, Game currentGame) {
+        return distances[previousGame.getHomePlayerId()][currentGame.getHomePlayerId()];
+    }
+
     public static int determineGameForPlayer(int roundIndex, int playerId) {
         int gameNumber;
         if (isHomeGame(roundIndex, playerId)) {
@@ -50,6 +54,26 @@ public class Instance {
             gameNumber = Instance.roundStadium[roundIndex][getOpponentOfPlayerInRound(playerId, roundIndex) * (-1) - 1];
         }
         return gameNumber - ((gameNumber / NUM_UMPIRES) * NUM_UMPIRES);
+    }
+
+    public static boolean isFeasible(Game current, Game next) {
+        // C4: An umpire crew must wait q1-1 rounds before revisiting a player's stadium
+        boolean q1Conflict = hasStadiumCountConflict(current, next);
+        // C1: An umpire crew must wait q2-1 rounds before officiating the same player again
+        boolean q2Conflict = hasPlayerConflict(current, next);
+        return !q1Conflict && !q2Conflict;
+    }
+
+    private static boolean hasPlayerConflict(Game current, Game next) {
+        int homePlayerId1 = current.getHomePlayerId();
+        int outPlayerId1 = current.getOutPlayerId();
+        int homePlayerId2 = next.getHomePlayerId();
+        int outPlayerId2 = next.getOutPlayerId();
+        return homePlayerId1 == homePlayerId2 || outPlayerId1 == outPlayerId2 || homePlayerId1 == outPlayerId2 || outPlayerId1 == homePlayerId2;
+    }
+
+    private static boolean hasStadiumCountConflict(Game current, Game next) {
+        return current.getHomePlayerId() == next.getHomePlayerId();
     }
 
     public static int getOpponentOfPlayerInRound(int playerId, int round) {

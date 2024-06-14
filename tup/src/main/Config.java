@@ -34,7 +34,7 @@ public class Config {
     public static boolean PRINT_LB_ARRAY = false;
     public static boolean PRINT_GAP = false;
     public static boolean PRINT_PRUNING_INFO = true;
-
+    public static boolean DEBUG_MATCHER = false;
     // PARAMETERS
     public static int INFEASIBLE_WEIGHT = 10;
     public static int UNASSIGNED = -99999;
