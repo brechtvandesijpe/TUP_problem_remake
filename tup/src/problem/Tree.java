@@ -10,12 +10,15 @@ import java.util.stream.IntStream;
 
 import static main.Config.*;
 import static model.Instance.*;
+import static problem.Utility.calculateVec;
 
 public class Tree {
 
     private final Instance instance;
     private LowerboundCalculator lowerboundCalculator;
     private final Pruner pruner;
+    private final Matcher matcher;
+
     private final boolean isSub;
 
     private final int[][] solution;
@@ -34,6 +37,7 @@ public class Tree {
 
     private HashSet<Integer> prunedGames;
 
+    private int partialMatchingDistance;
     private int partialDistance;
     private int totalDistance;
     private int eval;
@@ -52,6 +56,7 @@ public class Tree {
         this.umpireScheduleByRound = new int[NUM_UMPIRES][NUM_ROUNDS];
         this.solution = new int[NUM_ROUNDS][NUM_UMPIRES];
         this.pruner = new Pruner(this);
+        this.matcher = new Matcher(instance);
     }
 
     /**
@@ -188,9 +193,20 @@ public class Tree {
                 }
 
                 //System.out.println("PartialDist: " + partialDistance + ", upperb: " + upperbound);
-                if (partialDistance + lowerbound >= upperbound) {
+                if (!isPromisingBeforePartialMatch()) {
                     unassign(a, umpire);
                     skips++;
+                    continue; // Prune the branch
+                }
+
+                // Calculate schedule
+                BitSet vec = calculateVec(umpire, currentRoundIndex, umpireScheduleByRound);
+                int subgraphSize = NUM_UMPIRES - 1 - umpire;
+                partialMatchingDistance = matcher.calculatePartialMatchingCost(vec, subgraphSize, currentRoundIndex - 1);
+                System.out.println("partialMatchingDistance: " +  partialMatchingDistance);
+                partialDistance = 6666;
+                if (!isPromisingAfterPartialMatch()) {
+                    unassign(a, umpire);
                     continue; // Prune the branch
                 }
 
@@ -335,6 +351,14 @@ public class Tree {
 
     public boolean isLastUmpire(int umpireId) {
         return umpireId == NUM_UMPIRES - 1;
+    }
+
+    public boolean isPromisingAfterPartialMatch() {
+        return lowerbound + partialDistance + partialMatchingDistance < upperbound;
+    }
+
+    public boolean isPromisingBeforePartialMatch() {
+        return lowerbound + partialDistance < upperbound;
     }
 
     // ******** SETTERS

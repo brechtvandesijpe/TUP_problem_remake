@@ -4,6 +4,8 @@ import model.Game;
 import model.Instance;
 import subproblem.match.Match;
 
+import java.util.BitSet;
+
 import static main.Config.*;
 import static model.Instance.*;
 import static subproblem.match.MatchFactory.createMatchAlgorithm;
@@ -27,7 +29,7 @@ public class Matcher {
         this.instance = instance;
     }
 
-    public int calculatePartialMatchingCost(int subGraphSize, int roundIndex) {
+    public int calculatePartialMatchingCost(BitSet vec, int subGraphSize, int roundIndex) {
         this.branchStart = NUM_UMPIRES * roundIndex;
         this.subGraphSize = subGraphSize;
         return - 1;
