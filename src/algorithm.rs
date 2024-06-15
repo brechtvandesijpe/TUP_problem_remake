@@ -10,14 +10,15 @@ const ENABLE_DEBUG_PRINT: bool = false;             // Print each time a new sol
 const ENABLE_UPDATE_PRINTS: bool = false;           // Print each time the best score found by LB
 
 // LOWERBOUND CALCULATIONS
-const ENABLE_LOWERBOUND: bool = false;
-const ENABLE_LOWERBOUND_PRUNING: bool = false;
+const ENABLE_LOWERBOUND: bool = true;
+const ENABLE_LOWERBOUND_PRUNING: bool = true;
 const PARRALLELIZE_LOWERBOUND: bool = false;
-const FIXATE_LB: bool = false;
+const FIXATE_LB: bool = true;
 
 // GLOBAL PROBLEM
 const ENABLE_UPPERBOUND_PRUNING: bool = true;
 const FIXATE_GLOBAL: bool = true;
+const PRINT_BEST_SOLUTION: bool = true;
 
 // CONSTRAINTS
 const ENABLE_GLOBAL_PRUNING: bool = true;
@@ -117,8 +118,8 @@ impl Game {
 
     pub fn as_tuple(
         &self,
-    ) -> (i32, i32) {
-        (self.home_player, self.out_player)
+    ) -> (Option<i32>, Option<i32>) {
+        (Some(self.home_player), Some(self.out_player))
     }
 }
 
@@ -190,7 +191,7 @@ impl Model {
 
 #[derive(Clone)]
 struct Solution {
-    assignments: Vec<Vec<(i32, i32)>>,
+    assignments: Vec<Vec<(Option<i32>, Option<i32>)>>,
     pub num_umpires: usize,
     pub num_rounds: usize,
     score: i128,
@@ -201,9 +202,22 @@ impl std::fmt::Display for Solution {
         &self,
         f: &mut std::fmt::Formatter<'_>
     ) -> std::fmt::Result {
+        let max_val = self.num_umpires * 2;
+        let max_val_chars = max_val.to_string().len();
+
         for round in &self.assignments {
             for game in round {
-                write!(f, "{:?} ", game)?;
+                let home = match game.0 {
+                    Some(home) => format!("{:width$}", home, width = max_val_chars),
+                    None => format!("{:width$}", "None", width = max_val_chars),
+                };
+
+                let out = match game.1 { // Assuming this should be game.1 for the 'out' value
+                    Some(out) => format!("{:width$}", out, width = max_val_chars),
+                    None => format!("{:width$}", "None", width = max_val_chars),
+                };
+
+                write!(f, "({}, {})", home, out)?;
             }
             write!(f, "\n")?;
         }
@@ -216,7 +230,7 @@ impl Solution {
         num_rounds: usize,
         num_umpires: usize) -> Self {
         Self {
-            assignments: vec![vec![(0, 0); num_umpires]; num_rounds],
+            assignments: vec![vec![(None, None); num_umpires]; num_rounds],
             num_umpires,
             num_rounds,
             score: 0,
@@ -227,7 +241,7 @@ impl Solution {
         &self,
         umpire_team: i32,
         round: i32,
-    ) -> i32 {
+    ) -> Option<i32> {
         self.assignments[round as usize][umpire_team as usize].0
     }
 
@@ -235,7 +249,7 @@ impl Solution {
         &self,
         umpire_team: i32,
         round: i32,
-    ) -> i32 {
+    ) -> Option<i32> {
         self.assignments[round as usize][umpire_team as usize].1
     }
 
@@ -252,11 +266,15 @@ impl Solution {
         
         let previous_location = self.assignments[(round - 1) as usize][umpire_team as usize].0;
         
-        if previous_location <= 0 {
+        if previous_location.is_none() {
+            panic!("Previous location is None");
+        }
+
+        if previous_location.unwrap() <= 0 {
             return 0;
         }
 
-        data.dist[(previous_location - 1) as usize][(next_location - 1) as usize]
+        data.dist[(previous_location.unwrap() - 1) as usize][(next_location - 1) as usize]
     }
 
     pub fn assign(
@@ -267,7 +285,8 @@ impl Solution {
         data: &Data,
     ) {
         let current_val = self.assignments[round  as usize][umpire_team as usize];
-        if current_val.0 != 0 || current_val.1 != 0 {
+
+        if !current_val.0.is_none() || !current_val.1.is_none() {
             self.unassign(umpire_team, round, data);
         }
 
@@ -281,8 +300,15 @@ impl Solution {
         round: i32,
         data: &Data,
     ) {
-        self.score -= self.get_extra_distance(self.assignments[round as usize][umpire_team as usize].0, umpire_team, round, data);
-        self.assignments[round as usize][umpire_team as usize] = (0, 0);
+        let home_location = self.assignments[round as usize][umpire_team as usize].0;
+
+        match home_location {
+            Some(home_location) => {
+                self.score -= self.get_extra_distance(home_location, umpire_team, round, data);
+                self.assignments[round as usize][umpire_team as usize] = (None, None);
+            },
+            None => panic!("Location was not assigned but is unassigned"),
+        }
     }
 
     pub fn fixate(
@@ -368,8 +394,10 @@ pub fn branch_and_bound(
         );
     
     // println!("{}", best_solution);
-    println!("Best solution:");
-    println!("{}", best_solution);
+    if PRINT_BEST_SOLUTION {
+        println!("\nBest solution:");
+        println!("{}", best_solution);
+    }
     best_score
 }
 
@@ -380,7 +408,7 @@ pub fn calculate_lb(
     q2: i32,
     round_lbs: &Arc<Mutex<Vec<Vec<i128>>>>,
 ) {
-    for k in 1..model.num_rounds {
+    for k in 1..model.num_rounds-3 {
         let r = model.num_rounds - k - 1;
         // println!("r = {}, num_rounds = {}, k = {}", r, model.num_rounds, k);
         let start_round = r as usize;
@@ -468,8 +496,22 @@ fn traverse_lb(
             let mut assignment_feasible = true;
             for umpire in 0..current_umpire {
                 let home_player = solution.get_home_player(umpire, current_round);
+
+                if home_player.is_none() {
+                    eprintln!("Home player is None in LB assignment pruning!");
+                    assignment_feasible = false;
+                    break;
+                }
+
                 let out_player = solution.get_out_player(umpire, current_round);
-                if game.home_player == home_player && game.out_player == out_player {
+
+                if out_player.is_none() {
+                    eprintln!("Out player is None in LB assignment pruning!");
+                    assignment_feasible = false;
+                    break;
+                }
+
+                if game.home_player == home_player.unwrap() && game.out_player == out_player.unwrap() {
                     assignment_feasible = false;
                     break;
                 }
@@ -487,9 +529,15 @@ fn traverse_lb(
 
             for round in stop_round_q1..current_round {
                 let home_player = solution.get_home_player(current_umpire, round);
-                if game.home_player == home_player {
-                    q1_feasible = false;
-                    break;
+
+                match home_player {
+                    Some(home_player) => {
+                        if game.home_player == home_player {
+                            q1_feasible = false;
+                            break;
+                        }
+                    },
+                    None => panic!("Home player is None when pruning Q1 in LB")
                 }
             }
 
@@ -504,11 +552,25 @@ fn traverse_lb(
             let stop_round_q2 = std::cmp::max(start_round as i32, current_round - q2 + 1);
             for round in stop_round_q2..current_round {
                 let home_player = solution.get_home_player(current_umpire, round);
+
+                if home_player.is_none() {
+                    eprintln!("Home player is None in LB Q2 pruning!");
+                    q2_feasible = false;
+                    break;
+                }
+
                 let out_player = solution.get_out_player(current_umpire, round);
-                if game.home_player == home_player ||
-                   game.home_player == out_player ||
-                   game.out_player == home_player ||
-                   game.out_player == out_player
+
+                if out_player.is_none() {
+                    eprintln!("Out player is None in LB Q2 pruning!");
+                    q2_feasible = false;
+                    break;
+                }
+
+                if game.home_player == home_player.unwrap() ||
+                   game.home_player == out_player.unwrap() ||
+                   game.out_player == home_player.unwrap() ||
+                   game.out_player == out_player.unwrap()
                 {
                     q2_feasible = false;
                     break;
@@ -600,7 +662,13 @@ fn traverse(
     if ENABLE_GLOBAL_PRUNING {
         let mut visited_teams: Vec<bool> = vec![false; data.num_teams as usize];
         for round in 0..current_round {
-            visited_teams[(solution.get_home_player(current_umpire, round) - 1) as usize] = true;
+            let home_player = solution.get_home_player(current_umpire, round);
+            match home_player {
+                Some(home_player) => {
+                    visited_teams[(home_player - 1) as usize] = true;
+                },
+                None => panic!("Home player is None when pruning global")
+            }
         }
 
         let num_unvisited = visited_teams.iter().filter(|&v| *v == false).count();
@@ -613,12 +681,26 @@ fn traverse(
     let next_round = if current_umpire == solution.num_umpires as i32 - 1 { current_round + 1 } else { current_round };
 
     for game in model.get_round(current_round) {
-        // FEASIBILITY CHECK OF THE GAMES:
-        // - PREVIOUS UMPIRE ASSIGNMENTS FEASIBILITY
         if ENABLE_ASSIGNMENT_PRUNING {
             let mut assignment_feasible = true;
             for umpire in 0..current_umpire {
-                if game.home_player == solution.get_home_player(umpire, current_round) && game.out_player == solution.get_out_player(umpire, current_round){
+                let home_player = solution.get_home_player(umpire, current_round);
+
+                if home_player.is_none() {
+                    eprintln!("Home player is None in assignment pruning!");
+                    assignment_feasible = false;
+                    break;
+                }
+
+                let out_player = solution.get_out_player(umpire, current_round);
+
+                if out_player.is_none() {
+                    eprintln!("Out player is None in assignment pruning!");
+                    assignment_feasible = false;
+                    break;
+                }
+
+                if game.home_player == home_player.unwrap() && game.out_player == out_player.unwrap() {
                     assignment_feasible = false;
                     break;
                 }
@@ -635,9 +717,16 @@ fn traverse(
             let stop_round_q1 = std::cmp::max(0, current_round - q1 + 1);
 
             for round in stop_round_q1..current_round {
-                if game.home_player == solution.get_home_player(current_umpire, round) {
-                    q1_feasible = false;
-                    break;
+                let home_player = solution.get_home_player(current_umpire, round);
+
+                match home_player {
+                    Some(home_player) => {
+                        if game.home_player == home_player {
+                            q1_feasible = false;
+                            break;
+                        }
+                    },
+                    None => panic!("Home player is None when pruning Q1 in LB")
                 }
             }
 
@@ -653,12 +742,25 @@ fn traverse(
 
             for round in stop_round_q2..current_round {
                 let home_player = solution.get_home_player(current_umpire, round);
+
+                if home_player.is_none() {
+                    eprintln!("Home player is None in LB Q2 pruning!");
+                    q2_feasible = false;
+                    break;
+                }
+
                 let out_player = solution.get_out_player(current_umpire, round);
 
-                if game.home_player == home_player ||
-                   game.home_player == out_player  ||
-                   game.out_player  == home_player ||
-                   game.out_player  == out_player
+                if out_player.is_none() {
+                    eprintln!("Out player is None in LB Q2 pruning!");
+                    q2_feasible = false;
+                    break;
+                }
+
+                if game.home_player == home_player.unwrap() ||
+                   game.home_player == out_player.unwrap() ||
+                   game.out_player == home_player.unwrap() ||
+                   game.out_player == out_player.unwrap()
                 {
                     q2_feasible = false;
                     break;
