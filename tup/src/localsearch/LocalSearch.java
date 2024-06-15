@@ -10,7 +10,16 @@ public class LocalSearch {
         this.metaheuristic = Config.META_HEURISTIC;
     }
 
-    public void perturbate() {
 
+     private int[][] findBestNeighbor(int[][] c) {
+        
+    }
+
+    public void perturbate() {
+        
+    }
+
+    private double evaluate(int[][] e) {
+        return 0.0; 
     }
 }
