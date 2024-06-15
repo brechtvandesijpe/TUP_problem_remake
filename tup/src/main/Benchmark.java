@@ -34,58 +34,59 @@ public class Benchmark {
         // todo: voeg de grotere nog toe
 
         System.out.println(blue + "------------------------------- 8 TEAMS -------------------------------" + reset);
-        benchmark.testInstance("tup/resources/umps8.txt", 4, 2, 34311);
-        benchmark.testInstance("tup/resources/umps8A.txt", 4, 2, 31490);
-        benchmark.testInstance("tup/resources/umps8B.txt", 4, 2, 32731);
-        benchmark.testInstance("tup/resources/umps8C.txt", 4, 2, 29879);
+        benchmark.testInstance("resources/umps8.txt", 4, 2, 34311);
+        benchmark.testInstance("resources/umps8A.txt", 4, 2, 31490);
+        benchmark.testInstance("resources/umps8B.txt", 4, 2, 32731);
+        benchmark.testInstance("resources/umps8C.txt", 4, 2, 29879);
         System.out.println(blue + "------------------------------- 10 TEAMS -------------------------------" + reset);
-        benchmark.testInstance("tup/resources/umps10.txt", 5, 2, 48942);
-        benchmark.testInstance("tup/resources/umps10A.txt", 5, 2, 46551);
-        benchmark.testInstance("tup/resources/umps10B.txt", 5, 2, 45609);
-        benchmark.testInstance("tup/resources/umps10C.txt", 5, 2, 43149);
+        benchmark.testInstance("resources/umps10.txt", 5, 2, 48942);
+        benchmark.testInstance("resources/umps10A.txt", 5, 2, 46551);
+        benchmark.testInstance("resources/umps10B.txt", 5, 2, 45609);
+        benchmark.testInstance("resources/umps10C.txt", 5, 2, 43149);
         System.out.println(blue + "------------------------------- 12 TEAMS -------------------------------" + reset);
-        benchmark.testInstance("tup/resources/umps12.txt", 7, 2, 86889);
-        benchmark.testInstance("tup/resources/umps12.txt", 5, 3, 93679);
-        benchmark.testInstance("tup/resources/umps12.txt", 4, 3, 89826);
+        benchmark.testInstance("resources/umps12.txt", 7, 2, 86889);
+        benchmark.testInstance("resources/umps12.txt", 5, 3, 93679);
+        benchmark.testInstance("resources/umps12.txt", 4, 3, 89826);
         System.out.println(blue + "------------------------------- 14 TEAMS -------------------------------" + reset);
-        benchmark.testInstance("tup/resources/umps14.txt", 7, 2, 146656);
-        benchmark.testInstance("tup/resources/umps14.txt", 8, 3, 172177);
-        benchmark.testInstance("tup/resources/umps14.txt", 8, 2, 147824);
-        benchmark.testInstance("tup/resources/umps14.txt", 7, 3, 164440);
-        benchmark.testInstance("tup/resources/umps14.txt", 6, 2, 145124);
-        benchmark.testInstance("tup/resources/umps14.txt", 6, 3, 158875);
-        benchmark.testInstance("tup/resources/umps14.txt", 5, 3, 154962);
-        benchmark.testInstance("tup/resources/umps14.txt", 5, 2, 143357);
+        benchmark.testInstance("resources/umps14.txt", 7, 2, 146656);
+        benchmark.testInstance("resources/umps14.txt", 8, 3, 172177);
+        benchmark.testInstance("resources/umps14.txt", 8, 2, 147824);
+        benchmark.testInstance("resources/umps14.txt", 7, 3, 164440);
+        benchmark.testInstance("resources/umps14.txt", 6, 2, 145124);
+        benchmark.testInstance("resources/umps14.txt", 6, 3, 158875);
+        benchmark.testInstance("resources/umps14.txt", 5, 3, 154962);
+        benchmark.testInstance("resources/umps14.txt", 5, 2, 143357);
 
-        benchmark.testInstance("tup/resources/umps14A.txt", 8, 3, 166184);
-        benchmark.testInstance("tup/resources/umps14A.txt", 8, 2, 143043);
-        benchmark.testInstance("tup/resources/umps14A.txt", 7, 3, 158760);
-        benchmark.testInstance("tup/resources/umps14A.txt", 7, 2, 140562);
-        benchmark.testInstance("tup/resources/umps14A.txt", 6, 3, 152981);
-        benchmark.testInstance("tup/resources/umps14A.txt", 6, 2, 138927);
-        benchmark.testInstance("tup/resources/umps14A.txt", 5, 3, 149331);
-        benchmark.testInstance("tup/resources/umps14A.txt", 5, 2, 137853);
+        benchmark.testInstance("resources/umps14A.txt", 8, 3, 166184);
+        benchmark.testInstance("resources/umps14A.txt", 8, 2, 143043);
+        benchmark.testInstance("resources/umps14A.txt", 7, 3, 158760);
+        benchmark.testInstance("resources/umps14A.txt", 7, 2, 140562);
+        benchmark.testInstance("resources/umps14A.txt", 6, 3, 152981);
+        benchmark.testInstance("resources/umps14A.txt", 6, 2, 138927);
+        benchmark.testInstance("resources/umps14A.txt", 5, 3, 149331);
+        benchmark.testInstance("resources/umps14A.txt", 5, 2, 137853);
 
-        benchmark.testInstance("tup/resources/umps14B.txt", 8, 3, 165026);
-        benchmark.testInstance("tup/resources/umps14B.txt", 8, 2, 141312);
-        benchmark.testInstance("tup/resources/umps14B.txt", 7, 3, 157884);
-        benchmark.testInstance("tup/resources/umps14B.txt", 7, 2, 138998);
-        benchmark.testInstance("tup/resources/umps14B.txt", 6, 3, 152740);
-        benchmark.testInstance("tup/resources/umps14B.txt", 6, 2, 138241);
-        benchmark.testInstance("tup/resources/umps14B.txt", 5, 3, 149455);
-        benchmark.testInstance("tup/resources/umps14B.txt", 5, 2, 136069);
+        benchmark.testInstance("resources/umps14B.txt", 8, 3, 165026);
+        benchmark.testInstance("resources/umps14B.txt", 8, 2, 141312);
+        benchmark.testInstance("resources/umps14B.txt", 7, 3, 157884);
+        benchmark.testInstance("resources/umps14B.txt", 7, 2, 138998);
+        benchmark.testInstance("resources/umps14B.txt", 6, 3, 152740);
+        benchmark.testInstance("resources/umps14B.txt", 6, 2, 138241);
+        benchmark.testInstance("resources/umps14B.txt", 5, 3, 149455);
+        benchmark.testInstance("resources/umps14B.txt", 5, 2, 136069);
 
-        benchmark.testInstance("tup/resources/umps14C.txt", 8, 3, 161262);
-        benchmark.testInstance("tup/resources/umps14C.txt", 8, 2, 141015);
-        benchmark.testInstance("tup/resources/umps14C.txt", 7, 3, 154913);
-        benchmark.testInstance("tup/resources/umps14C.txt", 7, 2, 138832);
-        benchmark.testInstance("tup/resources/umps14C.txt", 6, 3, 150858);
-        benchmark.testInstance("tup/resources/umps14C.txt", 6, 2, 136394);
-        benchmark.testInstance("tup/resources/umps14C.txt", 5, 3, 148349);
-        benchmark.testInstance("tup/resources/umps14C.txt", 5, 2, 134916);
+        benchmark.testInstance("resources/umps14C.txt", 8, 3, 161262);
+        benchmark.testInstance("resources/umps14C.txt", 8, 2, 141015);
+        benchmark.testInstance("resources/umps14C.txt", 7, 3, 154913);
+        benchmark.testInstance("resources/umps14C.txt", 7, 2, 138832);
+        benchmark.testInstance("resources/umps14C.txt", 6, 3, 150858);
+        benchmark.testInstance("resources/umps14C.txt", 6, 2, 136394);
+        benchmark.testInstance("resources/umps14C.txt", 5, 3, 148349);
+        benchmark.testInstance("resources/umps14C.txt", 5, 2, 134916);
 
         System.out.println(blue + "------------------------------- 16 TEAMS -------------------------------" + reset);
-        benchmark.testInstance("tup/resources/umps16.txt", 8, 2, -1);
+        benchmark.testInstance("resources/umps16.txt", 7, 4, 197028);
+
     }
 
     /**
