@@ -6,14 +6,14 @@ use std::thread;
 use std::borrow::BorrowMut;
 
 // DEBUGGING
-const ENABLE_DEBUG_PRINT: bool = false;
-const ENABLE_UPDATE_PRINTS: bool = true;
+const ENABLE_DEBUG_PRINT: bool = false;             // Print each time a new solution is found in Global
+const ENABLE_UPDATE_PRINTS: bool = false;           // Print each time the best score found by LB
 
 // LOWERBOUND CALCULATIONS
-const ENABLE_LOWERBOUND: bool = true;
-const ENABLE_LOWERBOUND_PRUNING: bool = true;
-const PARRALLELIZE_LOWERBOUND: bool = true;
-const FIXATE_LB: bool = true;
+const ENABLE_LOWERBOUND: bool = false;
+const ENABLE_LOWERBOUND_PRUNING: bool = false;
+const PARRALLELIZE_LOWERBOUND: bool = false;
+const FIXATE_LB: bool = false;
 
 // GLOBAL PROBLEM
 const ENABLE_UPPERBOUND_PRUNING: bool = true;
@@ -266,10 +266,10 @@ impl Solution {
         round: i32,
         data: &Data,
     ) {
-        // let current_val = self.assignments[round  as usize][umpire_team as usize];
-        // if current_val.0 != 0 || current_val.1 != 0 {
-        //     self.unassign(umpire_team, round, data);
-        // }
+        let current_val = self.assignments[round  as usize][umpire_team as usize];
+        if current_val.0 != 0 || current_val.1 != 0 {
+            self.unassign(umpire_team, round, data);
+        }
 
         self.score += self.get_extra_distance(game.home_player, umpire_team, round, data);
         self.assignments[round  as usize][umpire_team as usize] = game.as_tuple();
@@ -344,17 +344,15 @@ pub fn branch_and_bound(
     let mut solution = Solution::new(model.num_rounds as usize, (data.num_teams / 2) as usize);
     let initial = model.get_round(0);
     
+    let mut first_round: i32 = 0;
     if FIXATE_GLOBAL {
-        solution.fixate(initial, 0);
+        solution.fixate(initial, first_round as usize);
+        first_round += 1;
     }
-
-    let first_round = match FIXATE_GLOBAL {
-        true => 1,
-        false => 0,
-    };
+    
 
     let best_solution = solution.clone();
-    let (_, best_score, _, _) =
+    let (best_solution, best_score, _, _) =
         traverse(
             best_solution,
             999999999,
@@ -370,6 +368,8 @@ pub fn branch_and_bound(
         );
     
     // println!("{}", best_solution);
+    println!("Best solution:");
+    println!("{}", best_solution);
     best_score
 }
 
@@ -390,14 +390,11 @@ pub fn calculate_lb(
         let mut solution = Solution::new(model.num_rounds as usize, (data.num_teams / 2) as usize);
         let initial = model.get_round(start_round as i32);
         
+        let mut first_round: i32 = start_round as i32;
         if FIXATE_LB {
-            solution.fixate(initial, start_round);
+            solution.fixate(initial, first_round as usize);
+            first_round += 1;
         }
-
-        let first_round = match FIXATE_LB {
-            true => start_round + 1,
-            false => start_round,
-        } as i32;
 
         let best_solution = solution.clone();
         
@@ -440,11 +437,8 @@ fn is_terminal_lb(
     solution: &Solution,
     current_umpire: i32,
     current_round: i32,
-    round_lbs: &Arc<Mutex<Vec<Vec<i128>>>>,
     end_round: usize,
-    upperbound: i128,
 ) -> bool {
-    let lowerbound = round_lbs.lock().unwrap()[current_round as usize][end_round];
     current_umpire + 1 == solution.num_umpires as i32 && current_round == end_round as i32
 }
 
@@ -538,7 +532,7 @@ fn traverse_lb(
             continue;
         }
 
-        let is_terminal = is_terminal_lb(&solution, current_umpire, current_round,  round_lbs, end_round, upperbound);
+        let is_terminal = is_terminal_lb(&solution, current_umpire, current_round, end_round);
         if is_terminal {
             if solution.score < best_score {
                 best_score = solution.score;
@@ -610,7 +604,7 @@ fn traverse(
         }
 
         let num_unvisited = visited_teams.iter().filter(|&v| *v == false).count();
-        if num_unvisited >= (model.num_rounds - current_round + 1) as usize {
+        if num_unvisited >= (model.num_rounds - current_round) as usize {
             return (best_solution, best_score, solution, upperbound);
         }
     }
