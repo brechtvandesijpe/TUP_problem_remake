@@ -2,6 +2,7 @@ package problem;
 
 import main.Config;
 import model.Instance;
+import subproblem.match.MatchType;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -96,14 +97,16 @@ public class LowerboundCalculator {
         
         StringBuilder dataBuilder = new StringBuilder();
         if (!fileExists) {
-            String header = "file,MATCH_ALGORITHM,BRANCH_AND_BOUND_2_DEEP\n";
+            String header = "file,HUNGARIAN,JONKERVOLGENANT,BRANCH_AND_BOUND_2_DEEP\n";
             dataBuilder.append(header);
         }
-    
-        double matchAlgorithmDuration = timeLBMatchAlgorithm(LowerboundMatchType.MATCH_ALGORITHM);
+        MATCH_TYPE = MatchType.HUNGARIAN;
+        double hungarianDuration = timeLBMatchAlgorithm(LowerboundMatchType.MATCH_ALGORITHM);
+        MATCH_TYPE = MatchType.JONKER_VOLGENANT;
+        double jonkervolgenantDuration = timeLBMatchAlgorithm(LowerboundMatchType.MATCH_ALGORITHM);
         double branchAndBound2DeepDuration = timeLBMatchAlgorithm(LowerboundMatchType.BRANCH_AND_BOUND_2_DEEP);
     
-        dataBuilder.append(Config.FILE_NAME + "_" + Q1 + "_" + Q2 + ",").append(matchAlgorithmDuration).append(",").append(branchAndBound2DeepDuration).append("\n");
+        dataBuilder.append(Config.FILE_NAME).append("_").append(Q1).append("_").append(Q2).append(",").append(hungarianDuration).append(",").append(jonkervolgenantDuration).append(",").append(branchAndBound2DeepDuration).append("\n");
     
         try (FileWriter fileWriter = new FileWriter(csvFilePath, true)) { // Enable appending
             fileWriter.write(dataBuilder.toString());
@@ -113,6 +116,7 @@ public class LowerboundCalculator {
     }
 
     private double timeLBMatchAlgorithm(LowerboundMatchType algorithmType) {
+        clearLBs();
         Config.LB_MATCH = algorithmType;
         long startTime = System.nanoTime();
         if (MATCH_LOWERBOUND) {
