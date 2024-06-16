@@ -3,6 +3,9 @@ package problem;
 import main.Config;
 import model.Instance;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -12,7 +15,7 @@ import static main.Config.*;
 
 public class LowerboundCalculator {
     private final Instance instance;
-    public final int[][] roundLBs;
+    public int[][] roundLBs;
     private final LowerboundMatch lowerboundMatch;
     private final Tree tree;
 
@@ -84,5 +87,63 @@ public class LowerboundCalculator {
             String currentTimeStamp = dateFormat.format(new Date());
             System.out.println(lightGrey + "[" + currentTimeStamp + "]" + reset + " GAP: " + df.format(gapPercentage) + ", LB: " + roundLBs[0][NUM_ROUNDS - 1] + ", UB: " + tree.getUpperbound() + yellow + " [LB ↑]" + Config.reset);
         }
+    }
+
+    public void timeAndLogLBMatchAlgorithms() {
+        String csvFilePath = "LBMatchDurations.csv";
+        
+        boolean fileExists = new File(csvFilePath).exists();
+        
+        StringBuilder dataBuilder = new StringBuilder();
+        if (!fileExists) {
+            String header = "file,MATCH_ALGORITHM,BRANCH_AND_BOUND_2_DEEP\n";
+            dataBuilder.append(header);
+        }
+    
+        double matchAlgorithmDuration = timeLBMatchAlgorithm(LowerboundMatchType.MATCH_ALGORITHM);
+        double branchAndBound2DeepDuration = timeLBMatchAlgorithm(LowerboundMatchType.BRANCH_AND_BOUND_2_DEEP);
+    
+        dataBuilder.append(Config.FILE_NAME + "_" + Q1 + "_" + Q2 + ",").append(matchAlgorithmDuration).append(",").append(branchAndBound2DeepDuration).append("\n");
+    
+        try (FileWriter fileWriter = new FileWriter(csvFilePath, true)) { // Enable appending
+            fileWriter.write(dataBuilder.toString());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private double timeLBMatchAlgorithm(LowerboundMatchType algorithmType) {
+        Config.LB_MATCH = algorithmType;
+        long startTime = System.nanoTime();
+        if (MATCH_LOWERBOUND) {
+            if (Config.LB_MATCH == LowerboundMatchType.MATCH_ALGORITHM) {
+                //System.out.println("Chose MATCH_ALGORITHM");
+                IntStream.range(0, NUM_ROUNDS - 1).forEach(roundIndex -> {
+                    int newLowerBoundValue = lowerboundMatch.calculateRoundMatching(roundIndex);
+                    int nextRound = roundIndex + 1;
+                    IntStream.rangeClosed(0, roundIndex).forEach(i -> IntStream.rangeClosed(nextRound, NUM_ROUNDS - 1).forEach(j -> roundLBs[i][j] = Math.max(roundLBs[i][j], roundLBs[i][roundIndex] + newLowerBoundValue + roundLBs[roundIndex][j])));
+                });
+            } else if (Config.LB_MATCH == LowerboundMatchType.BRANCH_AND_BOUND_2_DEEP) {
+                for (int roundIndex = 0; roundIndex < NUM_ROUNDS - 1; roundIndex++) {
+                    Tree tree = new Tree(instance, roundIndex, roundIndex + 1, true);
+                    tree.startSubTraversal(this);
+                    int newLowerBoundValue = tree.getTotalDistance();
+                    int nextRound = roundIndex + 1;
+                    for (int i = 0; i <= roundIndex; i++) {
+                        for (int j = nextRound; j < NUM_ROUNDS; j++) {
+                            roundLBs[i][j] = Math.max(roundLBs[i][j], roundLBs[i][roundIndex] + newLowerBoundValue + roundLBs[roundIndex][j]);
+                        }
+                    }
+                }
+            }else {
+                // todo
+            }
+        }
+        long endTime = System.nanoTime();
+        return (endTime - startTime) / 1_000_000_000.0;
+    }
+
+    public void clearLBs() {
+        roundLBs = new int[NUM_ROUNDS][NUM_ROUNDS];
     }
 }

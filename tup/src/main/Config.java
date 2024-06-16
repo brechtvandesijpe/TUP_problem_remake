@@ -33,7 +33,7 @@ public class Config {
     public static boolean DEBUG_LOWERBOUND_CALCULATOR = false;
     public static boolean DEBUG_COSTARRAY = false;
     public static boolean DEBUG_LOWERBOUND_MATCHER = false;
-    public static boolean PRINT_LB_ARRAY = true;
+    public static boolean PRINT_LB_ARRAY = false;
     public static boolean PRINT_GAP = false;
     public static boolean PRINT_PRUNING_INFO = false;
     public static boolean DEBUG_MATCHER = false;

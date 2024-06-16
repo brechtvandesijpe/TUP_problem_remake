@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 
+import problem.LowerboundCalculator;
 import problem.Tree;
 
 import static main.Config.*;
@@ -129,5 +130,9 @@ public class Benchmark {
                 }
             }
         }
+
+        // Timing
+        tree.getLowerboundCalculator().clearLBs();
+        tree.getLowerboundCalculator().timeAndLogLBMatchAlgorithms();
     }
 }
