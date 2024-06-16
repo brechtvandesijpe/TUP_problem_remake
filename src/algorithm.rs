@@ -13,8 +13,8 @@ use std::io::Write;
 // DEBUGGING
 const ENABLE_DEBUG_PRINT: bool = false;             // Print each time a new solution is found in Global
 const ENABLE_UPDATE_PRINTS: bool = false;           // Print each time the best found
-const EXPORT_RESULT: bool = true;
-const PRINT_BEST_SOLUTION: bool = true;
+const EXPORT_RESULT: bool = false;
+const PRINT_BEST_SOLUTION: bool = false;
 const PRINT_PRUNING_DEBUG: bool = false;
 const PRINT_INTERMEDIATE_MATRIX: bool = false;
 const PRINT_MODEL: bool = false;
