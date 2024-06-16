@@ -1,160 +1,119 @@
 import sys
-global input_file, output_file, Q1, Q2
-import ast
+import pandas as pd
+import re
 
-checkmark = "\u2713"
-crossout = "\u2717"
-
-def constraint_ok(title):
-    print(f'''          {checkmark} {title} constraint''')
-    
-def constraint_nok(line, title):
-    print(f'''          {crossout} {line} {title}''')
-
-def check_q1(data):
-    num_teams = len(data[0])
-    banlist = []
-    result = True
-    
-    for i in range(num_teams):
-        banlist.append([])
-    
-    for rnd_index, rnd in enumerate(data):
-        for umpire, entry in enumerate(rnd):
-            if rnd_index > Q1 - 1:
-                del banlist[umpire][0]
-                
-            if entry in banlist[umpire]:
-                result = False
-                constraint_nok(f"Umpireteam {umpire} failed round {rnd_index} → {rnd}", f"of Q1 constraint")
-                
-            banlist[umpire].append(entry)
-    
-    return result
-    
-def check_q2(data):
-    num_teams = len(data[0])
-    banlist = []
-    result = True
-    
-    for i in range(num_teams):
-        banlist.append([])
-    
-    for rnd_index, rnd in enumerate(data):
-        for umpire, entry in enumerate(rnd):
-            if rnd_index > Q2 - 1:
-                del banlist[umpire][0]
-                
-            if entry in banlist[umpire]:
-                result = False
-                constraint_nok(f"Umpireteam {umpire} failed round {rnd_index} → {rnd}", f"of Q2 constraint")
-                
-            banlist[umpire].append(entry)
-    
-    return result
-    
-def check_global(data):    
-    visited = []
-    result = True
-    
-    for i in range(len(data[0])):
-        visited.append([])
-        for j in range(len(data[0]) * 2):
-            visited[i].append(False)
-    
-    for rnd in data:
-        for i in range(len(rnd)):
-            visited[i][rnd[i][0] - 1] = True
-    
-    for i, visit_check in enumerate(visited):
-        if False in visit_check:
-            result = False
-            constraint_nok(f"Umpireteam {i} failed", "of global constraint")
-    
-    return result
-
-def parse_data(filename):
+def read_data(filename):
     with open(f"resources/{filename}", 'r') as file:
-        lines = file.readlines()
+        content = file.read()
 
-    nTeams = int(lines[1].split('=')[1].split(";")[0])
+    # Attempt to extract nTeams value
+    nTeams_match = re.search(r'nTeams\s*=\s*(\d+)\s*;', content)
+    if nTeams_match:
+        nTeams = int(nTeams_match.group(1))
+    else:
+        raise ValueError("nTeams not found in the file.")
 
-    dist_start = lines.index('dist= [\n') + 1
-    dist_end = lines.index('      ];\n')
-    dist = [list(map(int, line.strip()[1:-1].split())) for line in lines[dist_start:dist_end]]
+    # Attempt to extract dist matrix
+    dist_matches = re.search(r'dist\s*=\s*\[\s*([\s\S]+?)\s*\];', content, re.DOTALL)
+    if dist_matches:
+        dist_str = dist_matches.group(1)
+        dist = [list(map(int, re.findall(r'\d+', row))) for row in dist_str.strip().split('\n')]
+    else:
+        raise ValueError("dist matrix not found in the file.")
 
-    opponents_start = lines.index('opponents=[\n') + 1
-    opponents_end = lines.index('          ];\n')
-    opponents = [list(map(int, line.strip()[1:-1].split())) for line in lines[opponents_start:opponents_end]]
+    # Attempt to extract opponents matrix
+    opponents_matches = re.search(r'opponents\s*=\s*\[\s*([\s\S]+?)\s*\];', content, re.DOTALL)
+    if opponents_matches:
+        opponents_str = opponents_matches.group(1)
+        opponents = [list(map(int, re.findall(r'[-\d]+', row))) for row in opponents_str.strip().split('\n')]
+    else:
+        raise ValueError("opponents matrix not found in the file.")
 
     return nTeams, dist, opponents
 
-if len(sys.argv) == 5:
-    input_file = sys.argv[1]
-    output_file = sys.argv[2]
-    Q1 = int(sys.argv[3])
-    Q2 = int(sys.argv[4])
-    
-    title = f"Processing {input_file} -> {output_file} with Q1 = {Q1}, Q2 = {Q2}"
-    width = len(title)
-    spacer = "-" * width
 
-    print(f'''          {spacer}
-          {title}
-          {spacer}''')
-    
-    nTeams, dist, opponents = parse_data('umps8.txt')
-    # print(f'''          {spacer}
-    #         nTeams = {nTeams}
-    #         dist = {dist}
-    #         opponents = {opponents}
-    #       ''')
-    
-    with open(output_file, 'r') as f:
-        lines = f.readlines()
+file_name = sys.argv[1]
+parts = file_name.split("_")
 
-    data = [ast.literal_eval(line) for line in lines]
-    for i, line in enumerate(data):
-        width = max(len(str(line)), width)
-        print(f"          {line} {i + 1}")
+input_filename = f"{parts[0]}.txt"
+q1 = int(parts[1])
+q2 = int(parts[2].split(".")[0])
+
+df = pd.read_csv(f"results/{file_name}")
+df['Home_Out'] = list(zip(df['Home'], df['Out']))
+pivot_df = df.pivot_table(index='Round', columns='Umpire', values='Home_Out', aggfunc=lambda x: x)
+pivot_df.fillna('None', inplace=True)
+matrix = pivot_df.to_numpy()
+
+nTeams, dist, opponents = read_data(input_filename)
+
+# PREVIOUS ASSIGNMENTS
+for rnd in matrix:
+    checklist = []
+    for umpire in rnd:
+        if umpire[0] in checklist:
+            print(f"({umpire[0]}, _) was assigned twice in the same round!")
+            sys.exit(1)
+        checklist.append(umpire[0])
+        if umpire[1] in checklist:
+            print(f"(_, {umpire[1]}) was assigned twice in the same round!")
+            sys.exit(1)
+        checklist.append(umpire[1])
+
+# GLOBAL CONSTRAINT
+for umpire_index in range(len(matrix[0])):
+    checklist = [i + 1 for i in range(nTeams)]
+    for rnd in matrix:
+        assignment = rnd[umpire_index]
+        if assignment[0] in checklist:
+            checklist.remove(assignment[0])
     
-    print(f'''          {spacer}''')
-   
-    # Q1 CONSTRAINT
-    result = check_q1(data)
-    if result:
-        constraint_ok("Q1")
-    print(f'''          {spacer}''')
+    if len(checklist) != 0:
+        print(f"Umpire {umpire_index + 1} global constraint not ok!")
+        sys.exit(1)
+        
+# Q1 CONSTRAINT
+for umpire_index in range(len(matrix[0])):
+    for start_round in range(len(matrix)):
+        checklist = []
+        try:
+            for i in range(q1):
+                assignment = matrix[start_round + i][umpire_index]
+                if assignment[0] not in checklist:
+                    checklist.append(assignment[0])
+                else:
+                    print(f"Umpire {umpire_index + 1}, start_round {start_round} Q1 constraint not ok!")
+                    sys.exit(1)
+        except IndexError:
+            pass
+
+# Q2 CONSTRAINT
+for umpire_index in range(len(matrix[0])):
+    for start_round in range(len(matrix)):
+        checklist = []
+        try:
+            for i in range(q2):
+                assignment = matrix[start_round + i][umpire_index]
+                if assignment[0] not in checklist:
+                    checklist.append(assignment[0])
+                else:
+                    print(f"Umpire {umpire_index + 1}, start_round {start_round}, home location Q2 constraint not ok!")
+                    sys.exit(1)
+                    
+                if assignment[1] not in checklist:
+                    checklist.append(assignment[1])
+                else:
+                    print(f"Umpire {umpire_index + 1}, start_round {start_round}, out location Q2 constraint not ok!")
+                    sys.exit(1)
+        except IndexError:
+            pass
     
-    # Q2 CONSTRAINT
-    result = check_q2(data)
-    if result:
-        constraint_ok("Q2")
-    print(f'''          {spacer}''')
-    
-    # GLOBAL CONSTRAINT
-    result = check_global(data)
-    if result:
-        constraint_ok("Global")
-    print(f'''          {spacer}''')
-    
-    # TOTAL DISTANCE
-    buffer = None
-    distance = 0
-    x = 0
-    for i, rnd in enumerate(data):
-        if i > 0:
-            x += 1
-            for j in range(len(rnd)):
-                distance += dist[rnd[j][0] - 1][buffer[j][0] - 1]
-        print(f"          {rnd} {distance}")
-        buffer = rnd
-    print(f'''
-          Total distance = {distance} (added distance from {x} rounds)
-          ''')
-    
-else:
-    print('''
-        Provide the needed arguments:
-        python3 validator.py <input_file>.txt <output_file>.txt <q1> <q2>
-          ''')
+total_distance = 0
+for umpire_index in range(len(matrix[0])):
+    previous_location = matrix[0][umpire_index][0] - 1
+    for index in range(1, len(matrix), 1):
+        current_location = matrix[index][umpire_index][0] - 1
+        total_distance += dist[previous_location][current_location]
+        previous_location = current_location
+        
+print(f"Solution is feasible, total distance = {total_distance}")
