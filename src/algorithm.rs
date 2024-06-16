@@ -22,7 +22,7 @@ const PRINT_MODEL: bool = false;
 // LOWERBOUND CALCULATIONS
 const ENABLE_LOWERBOUND: bool = true;
 const ENABLE_LOWERBOUND_PRUNING: bool = true;
-const PARRALLELIZE_LOWERBOUND: bool = false;
+const PARRALLELIZE_LOWERBOUND: bool = true;
 const EXPORT_LB_MATRIX: bool = true;
 const FIXATE_LB: bool = true;
 
@@ -506,7 +506,7 @@ pub fn calculate_lb(
     q2: i32,
     round_lbs: &Arc<Mutex<Vec<Vec<i128>>>>,
 ) {
-    for k in 1..model.num_rounds-4 {
+    for k in 1..model.num_rounds {
         let r = model.num_rounds - k - 1;
         // println!("r = {}, num_rounds = {}, k = {}", r, model.num_rounds, k);
         let start_round = r as usize;
@@ -916,7 +916,7 @@ fn traverse(
         if is_terminal(&solution, current_umpire, current_round, round_lbs, solution.num_rounds - 1, upperbound) {
             if ENABLE_GLOBAL_PRUNING {
                 for umpire in 0..solution.num_umpires {
-                    let mut unvisited_teams: Vec<i32> = (1..data.num_teams).collect();
+                    let mut unvisited_teams: Vec<i32> = (1..data.num_teams+1).collect();
                     for round in 0..current_round+1 {
                         let home_player = solution.get_home_player(umpire as i32, round);
                         match home_player {
@@ -934,7 +934,7 @@ fn traverse(
                     
                     // println!("{}", unvisited_teams.len());
 
-                    if unvisited_teams.len() != 0 as usize {
+                    if unvisited_teams.len() > 0 as usize {
                         if PRINT_PRUNING_DEBUG {
                             println!("-> GLOBAL");
                         }
