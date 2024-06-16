@@ -12,7 +12,7 @@ public class LocalSearch {
 
 
      private int[][] findBestNeighbor(int[][] c) {
-        
+        return null;
     }
 
     public void perturbate() {
