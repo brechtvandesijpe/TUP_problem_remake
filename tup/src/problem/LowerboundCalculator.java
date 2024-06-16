@@ -92,6 +92,7 @@ public class LowerboundCalculator {
 
     public void timeAndLogLBMatchAlgorithms() {
         String csvFilePath = "LBMatchDurations.csv";
+        int measurements = 100;
         
         boolean fileExists = new File(csvFilePath).exists();
         
@@ -100,14 +101,30 @@ public class LowerboundCalculator {
             String header = "file,HUNGARIAN,JONKERVOLGENANT,BRANCH_AND_BOUND_2_DEEP\n";
             dataBuilder.append(header);
         }
-        MATCH_TYPE = MatchType.HUNGARIAN;
-        double hungarianDuration = timeLBMatchAlgorithm(LowerboundMatchType.MATCH_ALGORITHM);
-        MATCH_TYPE = MatchType.JONKER_VOLGENANT;
-        double jonkervolgenantDuration = timeLBMatchAlgorithm(LowerboundMatchType.MATCH_ALGORITHM);
-        double branchAndBound2DeepDuration = timeLBMatchAlgorithm(LowerboundMatchType.BRANCH_AND_BOUND_2_DEEP);
-    
-        dataBuilder.append(Config.FILE_NAME).append("_").append(Q1).append("_").append(Q2).append(",").append(hungarianDuration).append(",").append(jonkervolgenantDuration).append(",").append(branchAndBound2DeepDuration).append("\n");
-    
+        
+        double hungarianTotalDuration = 0;
+        double jonkervolgenantTotalDuration = 0;
+        double branchAndBound2DeepTotalDuration = 0;
+        
+        for (int i = 0; i < measurements; i++) {
+            MATCH_TYPE = MatchType.HUNGARIAN;
+            hungarianTotalDuration += timeLBMatchAlgorithm(LowerboundMatchType.MATCH_ALGORITHM);
+            
+            MATCH_TYPE = MatchType.JONKER_VOLGENANT;
+            jonkervolgenantTotalDuration += timeLBMatchAlgorithm(LowerboundMatchType.MATCH_ALGORITHM);
+            
+            branchAndBound2DeepTotalDuration += timeLBMatchAlgorithm(LowerboundMatchType.BRANCH_AND_BOUND_2_DEEP);
+        }
+        
+        double hungarianMeanDuration = hungarianTotalDuration / measurements;
+        double jonkervolgenantMeanDuration = jonkervolgenantTotalDuration / measurements;
+        double branchAndBound2DeepMeanDuration = branchAndBound2DeepTotalDuration / measurements;
+        
+        dataBuilder.append(Config.FILE_NAME).append("_").append(Q1).append("_").append(Q2).append(",")
+                    .append(hungarianMeanDuration).append(",")
+                    .append(jonkervolgenantMeanDuration).append(",")
+                    .append(branchAndBound2DeepMeanDuration).append("\n");
+        
         try (FileWriter fileWriter = new FileWriter(csvFilePath, true)) { // Enable appending
             fileWriter.write(dataBuilder.toString());
         } catch (IOException e) {
