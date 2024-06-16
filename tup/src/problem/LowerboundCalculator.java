@@ -41,8 +41,18 @@ public class LowerboundCalculator {
                     IntStream.rangeClosed(0, roundIndex).forEach(i -> IntStream.rangeClosed(nextRound, NUM_ROUNDS - 1).forEach(j -> roundLBs[i][j] = Math.max(roundLBs[i][j], roundLBs[i][roundIndex] + newLowerBoundValue + roundLBs[roundIndex][j])));
                 });
             } else if (Config.LB_MATCH == LowerboundMatchType.BRANCH_AND_BOUND_2_DEEP) {
-                // todo
-            } else {
+                for (int roundIndex = 0; roundIndex < NUM_ROUNDS - 1; roundIndex++) {
+                    Tree tree = new Tree(instance, roundIndex, roundIndex + 1, true);
+                    tree.startSubTraversal(this);
+                    int newLowerBoundValue = tree.getTotalDistance();
+                    int nextRound = roundIndex + 1;
+                    for (int i = 0; i <= roundIndex; i++) {
+                        for (int j = nextRound; j < NUM_ROUNDS; j++) {
+                            roundLBs[i][j] = Math.max(roundLBs[i][j], roundLBs[i][roundIndex] + newLowerBoundValue + roundLBs[roundIndex][j]);
+                        }
+                    }
+                }
+            }else {
 
             }
         }
