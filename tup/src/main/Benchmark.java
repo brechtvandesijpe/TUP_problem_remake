@@ -32,7 +32,9 @@ public class Benchmark {
                 " * $$$$$$$/  $$$$$$$$/ $$/   $$/  $$$$$$/  $$/   $$/ $$/      $$/ $$/   $$/ $$/   $$/ $$/   $$/\n" +
                 " */" + reset
         );
+
         // todo: voeg de grotere nog toe
+
         System.out.println(blue + "------------------------------- 4 TEAMS -------------------------------" + reset);
         benchmark.testInstance("resources/umps4.txt", 2, 1, 5176);
         System.out.println(blue + "------------------------------- 8 TEAMS -------------------------------" + reset);

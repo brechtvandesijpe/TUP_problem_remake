@@ -331,7 +331,14 @@ public class Tree {
      */
 
     public int evaluateStadiumCounts(int[][] stadiumCount) {
-        return IntStream.range(0, NUM_UMPIRES).flatMap(umpireId -> IntStream.range(0, NUM_TEAMS).filter(stadium -> stadiumCount[umpireId][stadium] < 1)).map(stadium -> INFEASIBLE_WEIGHT).sum();
+        if(GLOBAL_CONSTRAINT_STRAT1) {
+            int eval = IntStream.range(0, NUM_UMPIRES).flatMap(umpireId -> IntStream.range(0, NUM_TEAMS).filter(stadium -> stadiumCount[umpireId][stadium] < 1)).map(stadium -> INFEASIBLE_WEIGHT).sum();
+           // System.out.println("eval: " + eval);
+            return eval;
+        }else{
+            return 0;
+        }
+
     }
 
     // ************** CHECKS

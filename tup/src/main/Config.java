@@ -27,6 +27,8 @@ public class Config {
     public static boolean ENABLE_PARTIAL_MATCHING = true;
     public static boolean ENABLE_HASHING = true;
 
+
+    public static boolean GLOBAL_CONSTRAINT_STRAT1 = true;
     // SETTINGS DEBUGGING
     public static boolean DEBUG_TREE = false;
     public static boolean DEBUG_PRUNER = false;
