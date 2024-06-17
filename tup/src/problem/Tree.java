@@ -49,6 +49,8 @@ public class Tree {
     private int numSkippedBranchesAfterPM = 0;
     private int numSkippedBranchesBeforePM = 0;
 
+    public final int[][] stadiumCount = new int[NUM_UMPIRES][NUM_TEAMS];
+
     public Tree(Instance instance, int startRoundIndex, int endRoundIndex, boolean isSub) {
         this.isSub = isSub;
         this.instance = instance;
@@ -228,7 +230,7 @@ public class Tree {
 
                 if (isReadyForLocalSearch(umpire, currentRoundIndex)) {
                     IntStream.rangeClosed(branchStart, NUM_UMPIRES * (1 + endRoundIndex) - 1).forEach(g -> solution[getGame(g).getRound()][gameUmpireLookup[g]] = g);
-                    if (evaluate() < upperbound) {
+                    if (evaluate(currentRoundIndex) < upperbound) {
                         setUpperbound();
                         if (!isSub) {
                             printDebugInfo();
@@ -254,6 +256,9 @@ public class Tree {
         gameUmpireLookup[gameId] = umpire;
         umpireScheduleByRound[umpire][roundIndex] = gameId;
         partialDistance += getInterStadiumDistance(gameIdPreviousRound, gameId);
+        if(!isSub) {
+            stadiumCount[umpire][getGame(gameId).getHomePlayerId()]++;
+        }
         // System.out.println("partial distance after assignment: " + partialDistance);
     }
 
@@ -266,6 +271,9 @@ public class Tree {
         int previousRoundIndex = roundIndex - 1;
         int gameIdPreviousRound = umpireScheduleByRound[umpire][previousRoundIndex];
         partialDistance -= getInterStadiumDistance(gameIdPreviousRound, gameId);
+        if(!isSub) {
+            stadiumCount[umpire][getGame(gameId).getHomePlayerId()]--;
+        }
         // System.out.println("partial distance after unassignment: " + partialDistance);
     }
 
@@ -292,7 +300,7 @@ public class Tree {
      * Evaluates the solution.
      */
 
-    public int evaluate() {
+    public int evaluate(int roundId) {
         totalDistance = IntStream.range(startRoundIndex, endRoundIndex).map(round -> IntStream.range(0, NUM_UMPIRES).map(umpireId -> {
             int nextRound = round + 1;
             int nextStadium = getGame(solution[nextRound][umpireId]).getHomePlayerId();
@@ -301,7 +309,7 @@ public class Tree {
         }).sum()).sum();
 
         if (!isSub) {
-            evaluateGlobalConstraint();
+            evaluateGlobalConstraint(roundId);
         }
         // eval != 0 -> infeasible
         return eval != 0 ? Integer.MAX_VALUE : totalDistance;
@@ -311,10 +319,10 @@ public class Tree {
      * Evaluates the global constraints.
      */
 
-    public void evaluateGlobalConstraint() {
+    public void evaluateGlobalConstraint(int round) {
         int[][] stadiumCount = new int[NUM_UMPIRES][NUM_TEAMS];
         calculateStadiumCount(stadiumCount);
-        eval = evaluateStadiumCounts(stadiumCount);
+        eval = evaluateStadiumCounts(stadiumCount, round);
     }
 
     /**
@@ -330,15 +338,45 @@ public class Tree {
      * Evaluates the stadium counts against global constr.
      */
 
+    /*
     public int evaluateStadiumCounts(int[][] stadiumCount) {
         if(GLOBAL_CONSTRAINT_STRAT1) {
             int eval = IntStream.range(0, NUM_UMPIRES).flatMap(umpireId -> IntStream.range(0, NUM_TEAMS).filter(stadium -> stadiumCount[umpireId][stadium] < 1)).map(stadium -> INFEASIBLE_WEIGHT).sum();
            // System.out.println("eval: " + eval);
             return eval;
         }else{
+
             return 0;
         }
 
+    }
+    */
+
+    public int evaluateStadiumCounts(int[][] stadiumCount, int round) {
+
+        if (GLOBAL_CONSTRAINT_STRAT1) {
+            int eval = 0;
+            for (int umpireId = 0; umpireId < NUM_UMPIRES; umpireId++) {
+                for (int stadium = 0; stadium < NUM_TEAMS; stadium++) {
+                    if (stadiumCount[umpireId][stadium] < 1) {
+                        //System.out.println("round: " + round + ", endRound: " + endRoundIndex);
+                        return INFEASIBLE_WEIGHT;
+                    }
+                }
+            }
+           // System.out.println("eval: " + eval);
+            return eval;
+        } else {
+            int eval = 0;
+            for (int umpireId = 0; umpireId < NUM_UMPIRES; umpireId++) {
+                for (int stadium = 0; stadium < NUM_TEAMS; stadium++) {
+                    if (stadiumCount[umpireId][stadium] < 1) {
+                        eval += INFEASIBLE_WEIGHT;
+                    }
+                }
+            }
+        }
+        return 0;
     }
 
     // ************** CHECKS
@@ -391,7 +429,7 @@ public class Tree {
      */
     public void setUpperbound() {
         UBSolution = solution;
-        upperbound = evaluate();
+        upperbound = evaluate(-1);  // todo
     }
 
     // ******** GETTERS
@@ -414,6 +452,86 @@ public class Tree {
 
     public int getTotalDistance() {
         return totalDistance;
+    }
+
+    public Pruner getPruner() {
+        return pruner;
+    }
+
+    public Matcher getMatcher() {
+        return matcher;
+    }
+
+    public boolean isSub() {
+        return isSub;
+    }
+
+    public int[][] getSolution() {
+        return solution;
+    }
+
+    public int[][] getUBSolution() {
+        return UBSolution;
+    }
+
+    public int getEndRoundIndex() {
+        return endRoundIndex;
+    }
+
+    public int getLowerbound() {
+        return lowerbound;
+    }
+
+    public int[][] getUmpireScheduleByRound() {
+        return umpireScheduleByRound;
+    }
+
+    public int[] getGameUmpireLookup() {
+        return gameUmpireLookup;
+    }
+
+    public int getBranchStart() {
+        return branchStart;
+    }
+
+    public HashSet<Integer> getPrunedGames() {
+        return prunedGames;
+    }
+
+    public int getPartialMatchingDistance() {
+        return partialMatchingDistance;
+    }
+
+    public int getPartialDistance() {
+        return partialDistance;
+    }
+
+    public int getEval() {
+        return eval;
+    }
+
+    public Map<BranchStrategy, Runnable> getStrategyMap() {
+        return strategyMap;
+    }
+
+    public int getSkips() {
+        return skips;
+    }
+
+    public int getNumSkippedBranches() {
+        return numSkippedBranches;
+    }
+
+    public int getNumSkippedBranchesAfterPM() {
+        return numSkippedBranchesAfterPM;
+    }
+
+    public int getNumSkippedBranchesBeforePM() {
+        return numSkippedBranchesBeforePM;
+    }
+
+    public int[][] getStadiumCount() {
+        return stadiumCount;
     }
 
     public LowerboundCalculator getLowerboundCalculator() {

@@ -34,7 +34,7 @@ public class Benchmark {
         );
 
         // todo: voeg de grotere nog toe
-
+        /*
         System.out.println(blue + "------------------------------- 4 TEAMS -------------------------------" + reset);
         benchmark.testInstance("resources/umps4.txt", 2, 1, 5176);
         System.out.println(blue + "------------------------------- 8 TEAMS -------------------------------" + reset);
@@ -52,6 +52,8 @@ public class Benchmark {
         benchmark.testInstance("resources/umps12.txt", 5, 3, 93679);
         benchmark.testInstance("resources/umps12.txt", 4, 3, 89826);
         System.out.println(blue + "------------------------------- 14 TEAMS -------------------------------" + reset);
+
+         */
         benchmark.testInstance("resources/umps14.txt", 7, 2, 146656);
         benchmark.testInstance("resources/umps14.txt", 8, 3, 172177);
         benchmark.testInstance("resources/umps14.txt", 8, 2, 147824);

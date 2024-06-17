@@ -6,6 +6,7 @@ import model.Instance;
 import java.util.HashSet;
 import java.util.stream.IntStream;
 
+import static main.Config.NUM_TEAMS;
 import static main.Config.NUM_UMPIRES;
 import static model.Instance.determineGameForPlayer;
 import static model.Instance.getGame;
@@ -46,8 +47,33 @@ public class Pruner {
         pruneBasedOnQ1Constraint(umpire, currentRoundIndex);
         pruneBasedOnQ2Constraint(umpire, currentRoundIndex);
         pruneBasedOnPreviousAssignments(umpire, currentRoundIndex);
+        if(!tree.isSub() && PREPRUNE_GLOBAL) {
+            pruneGlobal(currentRoundIndex);
+        }
         numPrunedGames += prunedGames.size();
         return prunedGames;
+    }
+
+
+    public void pruneGlobal(int roundIndex) {
+        int[][] stadiumCounts = tree.getStadiumCount();
+
+        for(int umpire = 0; umpire < NUM_UMPIRES-1; umpire++) {
+            int numLeft = NUM_TEAMS;
+            for(int stadium = 0; stadium < NUM_TEAMS-1; stadium++) {
+                if(stadiumCounts[umpire][stadium] > 0) {
+                    numLeft--;
+                }
+            }
+            //System.out.println("num left: " + numLeft + ", " + (tree.getEndRoundIndex() - roundIndex));
+            if(numLeft > tree.getEndRoundIndex() - roundIndex) {
+                int gameId = tree.umpireScheduleByRound[umpire][roundIndex];
+                //int gameId = Math.floorMod(tree.umpireScheduleByRound[umpire][roundIndex], NUM_UMPIRES);
+               // System.out.println("GameId: " + gameId);
+                prunedGames.add(gameId);
+            }
+        }
+
     }
 
     /**
@@ -93,6 +119,7 @@ public class Pruner {
         IntStream.range(0, umpire).mapToObj(uid -> Math.floorMod(tree.umpireScheduleByRound[uid][roundIndex], NUM_UMPIRES)).forEach(prunedGames::add);
         numPrunedBasedAfterPreviousAssignments += prunedGames.size();
     }
+
 
     /**
      * Checks if a game is assigned based on gameId

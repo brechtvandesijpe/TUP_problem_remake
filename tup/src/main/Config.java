@@ -27,7 +27,7 @@ public class Config {
     public static boolean ENABLE_PARTIAL_MATCHING = true;
     public static boolean ENABLE_HASHING = true;
 
-
+    public static boolean PREPRUNE_GLOBAL = true;
     public static boolean GLOBAL_CONSTRAINT_STRAT1 = true;
     // SETTINGS DEBUGGING
     public static boolean DEBUG_TREE = false;
@@ -36,7 +36,7 @@ public class Config {
     public static boolean DEBUG_COSTARRAY = false;
     public static boolean DEBUG_LOWERBOUND_MATCHER = false;
     public static boolean PRINT_LB_ARRAY = false;
-    public static boolean PRINT_GAP = false;
+    public static boolean PRINT_GAP = true;
     public static boolean PRINT_PRUNING_INFO = false;
     public static boolean DEBUG_MATCHER = false;
     public static boolean PRINT_HIT_RATIO = false;
