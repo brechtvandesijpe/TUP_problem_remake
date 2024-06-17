@@ -3,12 +3,12 @@ use std::error::Error;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::str::FromStr;
-use std::sync::{Arc, Mutex};
 use std::thread;
-use std::borrow::BorrowMut;
 use std::fs;
 use std::fmt;
 use std::io::Write;
+use std::sync::mpsc;
+use std::sync::Arc;
 
 // DEBUGGING
 const ENABLE_DEBUG_PRINT: bool = false;             // Print each time a new solution is found in Global
@@ -23,7 +23,7 @@ const PRINT_MODEL: bool = false;
 const ENABLE_LOWERBOUND: bool = true;
 const ENABLE_LOWERBOUND_PRUNING: bool = true;
 const PARRALLELIZE_LOWERBOUND: bool = true;
-const EXPORT_LB_MATRIX: bool = true;
+const EXPORT_LB_MATRIX: bool = false;
 const FIXATE_LB: bool = true;
 
 // GLOBAL PROBLEM
@@ -392,14 +392,15 @@ pub fn branch_and_bound(
     let data = read_data(format!("resources/{}.txt", file_name).as_str()).unwrap();
     let model = Model::new(&data);
 
-    let round_lbs: Arc<Mutex<Vec<Vec<i128>>>> = Arc::new(Mutex::new(vec![vec![0; model.num_rounds as usize]; model.num_rounds as usize]));
-    let round_lbs_clone:Arc<Mutex<Vec<Vec<i128>>>> = Arc::clone(&round_lbs);
+    let (tx, rx) = mpsc::channel();
 
     let model_clone = Arc::new(model.clone());
     let model_clone_lb = Arc::clone(&model_clone);
 
     let data_clone = Arc::new(data.clone());
     let data_clone_lb = Arc::clone(&data_clone);
+
+    let mut input_round_lbs = vec![vec![0; model.num_rounds as usize]; model.num_rounds as usize];
 
     if ENABLE_LOWERBOUND {
         let handle = thread::spawn(
@@ -409,7 +410,7 @@ pub fn branch_and_bound(
                     &data_clone_lb,
                     q1,
                     q2,
-                    &round_lbs_clone
+                    tx
                 )
             }
         );
@@ -417,8 +418,18 @@ pub fn branch_and_bound(
         if !PARRALLELIZE_LOWERBOUND {
             handle.join().unwrap();
 
+            loop {
+                match rx.try_recv() {
+                    Ok(new_round_lbs) => {
+                        input_round_lbs = new_round_lbs;
+                    },
+                    Err(std::sync::mpsc::TryRecvError::Empty) => break, // Channel is empty
+                    Err(_) => break,                                    // Handle other errors (e.g., disconnected)
+                }
+            }
+            pretty_print(&input_round_lbs);
+
             if EXPORT_LB_MATRIX {
-                let matrix = round_lbs.lock().unwrap();
                 let file_path = format!("results/{}_{}_{}_lb.txt", file_name, q1, q2);
                 let mut file = match File::create(&file_path) {
                     Ok(file) => file,
@@ -427,7 +438,7 @@ pub fn branch_and_bound(
                         return 42;
                     }
                 };
-                for row in matrix.iter() {
+                for row in input_round_lbs.iter() {
                     let row_str = row.iter()
                                     .map(|&num| num.to_string())
                                     .collect::<Vec<String>>()
@@ -458,10 +469,9 @@ pub fn branch_and_bound(
         solution.fixate(initial, first_round as usize);
         first_round += 1;
     }
-    
 
     let best_solution = solution.clone();
-    let (best_solution, best_score, _, _) =
+    let (best_solution, best_score, _, _, _) =
         traverse(
             best_solution,
             999999999,
@@ -473,7 +483,8 @@ pub fn branch_and_bound(
             q2,
             &model,
             &data,
-            &round_lbs
+            &rx,
+            input_round_lbs,
         );
     
     // println!("{}", best_solution);
@@ -504,8 +515,12 @@ pub fn calculate_lb(
     data: &Data,
     q1: i32,
     q2: i32,
-    round_lbs: &Arc<Mutex<Vec<Vec<i128>>>>,
+    tx: std::sync::mpsc::Sender<Vec<Vec<i128>>>,
 ) {
+    let mut round_lbs: Vec<Vec<i128>> = vec![vec![0; model.num_rounds as usize]; model.num_rounds as usize];
+
+    
+
     for k in 1..model.num_rounds {
         let r = model.num_rounds - k - 1;
         // println!("r = {}, num_rounds = {}, k = {}", r, model.num_rounds, k);
@@ -538,25 +553,28 @@ pub fn calculate_lb(
                 &data,
                 start_round,
                 end_round,
-                round_lbs
+                &round_lbs
             );
 
         // println!("Score = {}", best_solution.score);
         // println!("{}", best_solution);
 
-        let mut matrix = round_lbs.lock().unwrap();
         for r1 in (0..=r).rev() {
             for r2 in (r + k)..model.num_rounds {
-                *matrix[r1 as usize][r2 as usize].borrow_mut() = 
+                round_lbs[r1 as usize][r2 as usize] = 
                     std::cmp::max(
-                        matrix[r1 as usize][r2 as usize],
-                        matrix[r1 as usize][r as usize] + best_solution.score + matrix[(r + k) as usize][r2 as usize]
+                        round_lbs[r1 as usize][r2 as usize],
+                        round_lbs[r1 as usize][r as usize] + best_solution.score + round_lbs[(r + k) as usize][r2 as usize]
                     );
+                match tx.send(round_lbs.clone()) {
+                    Ok(_) => {},
+                    Err(_) => return,
+                }
             }
         }
 
         if PRINT_INTERMEDIATE_MATRIX {
-            pretty_print(&matrix);
+            pretty_print(&round_lbs);
         }
     }
 }
@@ -583,7 +601,7 @@ fn traverse_lb(
     data: &Data,
     start_round: usize,
     end_round: usize,
-    round_lbs: &Arc<Mutex<Vec<Vec<i128>>>>,
+    round_lbs: &Vec<Vec<i128>>,
 ) -> (Solution, i128, Solution, i128) {
     let next_umpire = (current_umpire + 1) % (solution.num_umpires as i32);
     let next_round = if current_umpire == solution.num_umpires as i32 - 1 { current_round + 1 } else { current_round };
@@ -684,7 +702,7 @@ fn traverse_lb(
         }
         
         solution.assign(game, current_umpire, current_round, data);
-        let mut lowerbound = round_lbs.lock().unwrap()[current_round as usize][end_round];
+        let mut lowerbound = round_lbs[current_round as usize][end_round];
 
         if !ENABLE_LOWERBOUND_PRUNING {
             lowerbound = 0;
@@ -735,15 +753,13 @@ fn is_terminal(
     solution: &Solution,
     current_umpire: i32,
     current_round: i32,
-    round_lbs: &Arc<Mutex<Vec<Vec<i128>>>>,
-    end_round: usize,
+    lowerbound: i128,
     upperbound: i128,
 ) -> bool {
-    let lowerbound = round_lbs.lock().unwrap()[current_round as usize][end_round];
     lowerbound == upperbound || current_umpire + 1 == solution.num_umpires as i32 && current_round + 1 == solution.num_rounds as i32
 }
 
-fn traverse(
+fn traverse (
     mut best_solution: Solution,
     mut best_score: i128,
     mut solution: Solution,
@@ -754,8 +770,9 @@ fn traverse(
     q2: i32,
     model: &Model,
     data: &Data,
-    round_lbs: &Arc<Mutex<Vec<Vec<i128>>>>,
-) -> (Solution, i128, Solution, i128) {
+    rx: &std::sync::mpsc::Receiver<Vec<Vec<i128>>>,
+    mut input_round_lbs: Vec<Vec<i128>>,
+) -> (Solution, i128, Solution, i128, Vec<Vec<i128>>) {
     if ENABLE_DEBUG_PRINT {
         println!("current_umpire = {}, current_round = {}, best_score = {}, upperbound = {}", current_umpire, current_round, best_score, upperbound); 
     }
@@ -788,7 +805,7 @@ fn traverse(
             if PRINT_PRUNING_DEBUG {
                 println!("-> GLOBAL");
             }
-            return (best_solution, best_score, solution, upperbound);
+            return (best_solution, best_score, solution, upperbound, input_round_lbs);
         }
     }
 
@@ -898,12 +915,36 @@ fn traverse(
         }
         
         let extra_distance = solution.get_extra_distance(game.home_player, current_umpire, current_round, data);
-        let mut lowerbound = round_lbs.lock().unwrap()[current_round as usize][(solution.num_rounds - 1) as usize];
-        
-        if !ENABLE_LOWERBOUND_PRUNING {
-            lowerbound = 0;
-        }
 
+        let mut received_lbs = None;
+
+        if PARRALLELIZE_LOWERBOUND {
+            loop {
+                match rx.try_recv() {
+                    Ok(new_round_lbs) => {
+                        // println!("Received");
+                        received_lbs = Some(new_round_lbs);
+                    },
+                    Err(std::sync::mpsc::TryRecvError::Empty) => break, // Channel is empty
+                    Err(_) => break,                                    // Handle other errors (e.g., disconnected)
+                }
+            }
+        }
+        
+        let mut lowerbound = 0;
+        
+        match &received_lbs {
+            None => lowerbound = input_round_lbs[current_round as usize][(solution.num_rounds - 1) as usize],
+            _ => {
+                lowerbound = received_lbs.clone().unwrap()[current_round as usize][(solution.num_rounds - 1) as usize];
+                input_round_lbs = received_lbs.unwrap();
+                // pretty_print(&input_round_lbs);
+                // println!("{}", lowerbound);
+            },
+        };
+        
+        // println!("{}", lowerbound);
+        
         if solution.score + extra_distance + lowerbound >= upperbound {
             if PRINT_PRUNING_DEBUG {
                 println!("EVAL");
@@ -913,7 +954,7 @@ fn traverse(
 
         solution.assign(game, current_umpire, current_round, data);
 
-        if is_terminal(&solution, current_umpire, current_round, round_lbs, solution.num_rounds - 1, upperbound) {
+        if is_terminal(&solution, current_umpire, current_round, lowerbound, upperbound) {
             if ENABLE_GLOBAL_PRUNING {
                 for umpire in 0..solution.num_umpires {
                     let mut unvisited_teams: Vec<i32> = (1..data.num_teams+1).collect();
@@ -939,7 +980,7 @@ fn traverse(
                             println!("-> GLOBAL");
                         }
                         solution.unassign( current_umpire, current_round, data);
-                        return (best_solution, best_score, solution, upperbound);
+                        return (best_solution, best_score, solution, upperbound, input_round_lbs);
                     }
                 }
             }
@@ -959,8 +1000,7 @@ fn traverse(
                 best_solution = solution.clone();
             }
         } else {
-            // println!("{}", solution);
-            (best_solution, best_score, solution, upperbound) = 
+            (best_solution, best_score, solution, upperbound, input_round_lbs) = 
                 traverse(
                     best_solution,
                     best_score,
@@ -972,11 +1012,12 @@ fn traverse(
                     q2,
                     model,
                     data,
-                    round_lbs
+                    rx,
+                    input_round_lbs,
                 );
         }
         solution.unassign( current_umpire, current_round, data);
     }
 
-    (best_solution, best_score, solution, upperbound)
+    (best_solution, best_score, solution, upperbound, input_round_lbs)
 }
