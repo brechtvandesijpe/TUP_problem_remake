@@ -5,50 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="3b2752fb-6b90-431b-a6fb-630887372147" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.vscode/launch.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/firedbg/version.toml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/readme.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resources/bounds/8_4_2_lb.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resources/output/res.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resources/umps10.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resources/umps10A.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resources/umps10B.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resources/umps10C.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resources/umps12.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resources/umps14.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resources/umps14A.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resources/umps14B.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resources/umps14C.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resources/umps16.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resources/umps16A.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resources/umps16B.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resources/umps16C.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resources/umps18.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resources/umps20.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resources/umps22.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resources/umps24.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resources/umps26.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resources/umps28.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resources/umps30.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resources/umps32.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resources/umps4.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resources/umps8.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resources/umps8A.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resources/umps8B.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/resources/umps8C.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/solution_umps8.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/solution_umps8A.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/solution_umps8C.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/algorithm.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/data.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/model.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/tests.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/validator.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tup/LBMatchDurations.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tup/src/main/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/tup/src/main/Main.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -63,29 +22,58 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.go.formatter.settings.were.checked": "true",
-    "RunOnceActivity.go.migrated.go.modules.settings": "true",
-    "WebServerToolWindowFactoryState": "false",
-    "aspect.path.notification.shown": "true",
-    "git-widget-placeholder": "lightweight__java",
-    "go.import.settings.migrated": "true",
-    "jdk.selected.JAVA_MODULE": "openjdk-21",
-    "last_opened_file_path": "C:/ELICT4/Geavanceerde_AI/Opdracht/TUP_problem_remake",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.formatter.settings.were.checked&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.migrated.go.modules.settings&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;aspect.path.notification.shown&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;lightweight__java&quot;,
+    &quot;go.import.settings.migrated&quot;: &quot;true&quot;,
+    &quot;jdk.selected.JAVA_MODULE&quot;: &quot;openjdk-21&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/ELICT4/Geavanceerde_AI/Opdracht/TUP_problem_remake&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\ELICT4\Geavanceerde_AI\Opdracht\TUP_problem_remake\tup\analysis" />
       <recent name="C:\ELICT4\Geavanceerde_AI\Opdracht\TUP_problem_remake" />
     </key>
+  </component>
+  <component name="RunManager">
+    <configuration name="analysis" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="TUP_problem_remake" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tup/analysis" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/tup/analysis/analysis.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.analysis" />
+      </list>
+    </recent_temporary>
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">

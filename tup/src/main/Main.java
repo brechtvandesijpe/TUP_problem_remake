@@ -5,7 +5,9 @@ import model.Game;
 import model.Instance;
 import problem.Tree;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
@@ -20,6 +22,17 @@ import static main.Config.*;
  */
 
 public class Main {
+
+    private void writeToCSV(String instanceFileName, double calculationTime) {
+        String filePath = "calculation_times.csv";
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath, true))) {
+            writer.write(instanceFileName + "," + String.format("%.2f", calculationTime) + "\n");
+        } catch (IOException e) {
+            System.err.println("Error writing to CSV: " + e.getMessage());
+        }
+    }
+
+
 
     public static void main(String[] args) throws IOException {
         Main main = new Main();
@@ -129,11 +142,14 @@ public class Main {
 
         if (upperbound == expectedValue) {
             // Result is the same as the expected value
-            System.out.println(green + "[PASSED]  " + reset + instanceFileName + " {" + Q1 + "," + Q2 + "} : Expected " + expectedValue + ", Actual " + solutionMessage + " - " + (float) (endExecution - startExecution) / 1_000_000_000.0 + " sec");
+            System.out.println(green + "[PASSED]  " + reset + instanceFileName + " {" + Q1 + "," + Q2 + "} : Expected " + expectedValue + ", Actual " + solutionMessage + " - " + String.format("%.2f", (endExecution - startExecution) / 1_000_000_000.0) + " sec");
         } else {
             // Result is different from the expected value
-            System.out.println(red + "[FAILED]  " + reset + instanceFileName + " {" + Q1 + "," + Q2 + "} : Expected " + expectedValue + ", Actual " + solutionMessage + " - " + (float) (endExecution - startExecution) / 1_000_000_000.0 + " sec");
+            System.out.println(red + "[FAILED]  " + reset + instanceFileName + " {" + Q1 + "," + Q2 + "} : Expected " + expectedValue + ", Actual " + solutionMessage + " - " + String.format("%.2f", (endExecution - startExecution) / 1_000_000_000.0) + " sec");
         }
+
+        writeToCSV(instanceFileName, ((endExecution - startExecution) / 1_000_000_000.0));
+
 
         // Prints the diagonal LB array
         if (PRINT_LB_ARRAY) {

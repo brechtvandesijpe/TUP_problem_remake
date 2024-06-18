@@ -33,7 +33,7 @@ public class Config {
     public static boolean MATCH_LOWERBOUND = true; // Enable/disable 2-round matching lower bound
     public static boolean PREVENT_SOLUTION_ROTATION = true; // Fixate first round to prevent solution rotation
     public static boolean ENABLE_PARTIAL_MATCHING = true; // Enable/disable partial matching in UB & LB Tree   
-    public static boolean ENABLE_HASHING = true; // Enable/disable hashing in partial matching
+    public static boolean ENABLE_HASHING = false; // Enable/disable hashing in partial matching
     public static boolean PREPRUNE_GLOBAL = false; // Prune before/after generation
     public static boolean GLOBAL_CONSTRAINT_STRAT1 = true; // Enable/disable global constraint strategy 1
     
