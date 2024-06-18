@@ -1,56 +1,56 @@
 # Benchmarking results according to the site
 
 Dataset     Q1      Q2      distance    status      calculation time
-umps4       2       1       5176        OK  
+umps4       2       1       5176        OK          233.206µs
 ---------------------------------------------------------------------        
-umps8       4       2       34311       OK          
-umps8A      4       2       31490       OK
-umps8B      4       2       32731       OK          
-umps8C      4       2       29879       OK    
+umps8       4       2       34311       OK          7.738999ms
+umps8A      4       2       31490       OK          7.666614ms
+umps8B      4       2       32731       OK          7.589372ms
+umps8C      4       2       29879       OK          7.130836ms
 ---------------------------------------------------------------------   
-umps10      5       2       48942       OK
-umps10A     5       2       46551       OK
-umps10B     5       2       45609       OK
-umps10C     5       2       43149       OK
+umps10      5       2       48942       OK          3.848124693s
+umps10A     5       2       46551       OK          2.608966995s
+umps10B     5       2       45609       OK          2.222782147s
+umps10C     5       2       43149       OK          3.17422962s
 ---------------------------------------------------------------------
-umps12      7       2       86889       OK
-umps12      6       3       INFEASIBLE  OK
-umps12      5       3       93679       OK
-umps12      4       3       89826       OK
+umps12      7       2       86889       OK          123.532016625s
+umps12      6       3       INFEASIBLE  OK          5.863344002s
+umps12      5       3       93679       OK          15.853492021s
+umps12      4       3       89826       OK          340.580627374s
 ---------------------------------------------------------------------
-umps14      8       3
-umps14      8       2
-umps14      7       3
-umps14      7       2
-umps14      6       3
-umps14      6       2
-umps14      5       3
-umps14      5       2
+umps14      8       3       172177
+umps14      8       2       147824
+umps14      7       3       164440
+umps14      7       2       146656
+umps14      6       3       158875
+umps14      6       2       145124
+umps14      5       3       154962
+umps14      5       2       143357
 
-umps14A     8       3
-umps14A     8       2
-umps14A     7       3
-umps14A     7       2
-umps14A     6       3
-umps14A     6       2
-umps14A     5       3
-umps14A     5       2
+umps14A     8       3       166184
+umps14A     8       2       143043
+umps14A     7       3       158760
+umps14A     7       2       140562
+umps14A     6       3       152981
+umps14A     6       2       138927
+umps14A     5       3       149331
+umps14A     5       2       137853
 
-umps14B     8       3
-umps14B     8       2
-umps14B     7       3
-umps14B     7       2
-umps14B     6       3
-umps14B     6       2
-umps14B     5       3
-umps14B     5       2
+umps14B     8       3       165026
+umps14B     8       2       141312
+umps14B     7       3       157884
+umps14B     7       2       138998
+umps14B     6       3       152740
+umps14B     6       2       138241
+umps14B     5       3       149455
+umps14B     5       2       136069
 
-umps14C     8       3
-umps14C     8       2
-umps14C     7       3
-umps14C     7       2
-umps14C     6       3
-umps14C     6       2
-umps14C     5       3
-umps14C     5       2
+umps14C     8       3       161262
+umps14C     8       2       141015
+umps14C     7       3       154913
+umps14C     7       2       138832
+umps14C     6       3       150858
+umps14C     6       2       136394
+umps14C     5       3       148349
+umps14C     5       2       134916
 ---------------------------------------------------------------------

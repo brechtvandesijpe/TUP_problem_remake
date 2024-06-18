@@ -9,10 +9,10 @@ mod benchs {
     
     #[bench]
     fn umps8_4_2(b: &mut Bencher) {
-        let print: RefCell<Option<i128>> = RefCell::new(None::<i128>);
+        let print: RefCell<Option<u64>> = RefCell::new(None::<u64>);
 
         b.iter(|| {
-            let result: i128 = branch_and_bound("umps8", 4, 2);
+            let result = branch_and_bound("umps8", 4, 2);
             assert_eq!(result, 34311);
             *print.borrow_mut() = Some(result);
         });
@@ -22,7 +22,7 @@ mod benchs {
     
     #[bench]
     fn umps8A_4_2(b: &mut Bencher) {
-        let print: RefCell<Option<i128>> = RefCell::new(None::<i128>);
+        let print: RefCell<Option<u64>> = RefCell::new(None::<u64>);
 
         b.iter(|| {
             let result = branch_and_bound("umps8A", 4, 2);
@@ -35,10 +35,10 @@ mod benchs {
     
     #[bench]
     fn umps8B_4_2(b: &mut Bencher) {
-        let print: RefCell<Option<i128>> = RefCell::new(None::<i128>);
+        let print: RefCell<Option<u64>> = RefCell::new(None::<u64>);
 
         b.iter(|| {
-            let result: i128 = branch_and_bound("umps8B", 4, 2);
+            let result = branch_and_bound("umps8B", 4, 2);
             assert_eq!(result, 32731);
             *print.borrow_mut() = Some(result);
         });
@@ -48,7 +48,7 @@ mod benchs {
     
     #[bench]
     fn umps8C_4_2(b: &mut Bencher) {
-        let print: RefCell<Option<i128>> = RefCell::new(None::<i128>);
+        let print: RefCell<Option<u64>> = RefCell::new(None::<u64>);
 
         b.iter(|| {
             let result = branch_and_bound("umps8C", 4, 2);
@@ -61,7 +61,7 @@ mod benchs {
     
     #[bench]
     fn umps10_5_2(b: &mut Bencher) {
-        let print: RefCell<Option<i128>> = RefCell::new(None::<i128>);
+        let print: RefCell<Option<u64>> = RefCell::new(None::<u64>);
 
         b.iter(|| {
             let result = branch_and_bound("umps10", 5, 2);
@@ -74,7 +74,7 @@ mod benchs {
     
     #[bench]
     fn umps10A_5_2(b: &mut Bencher) {
-        let print: RefCell<Option<i128>> = RefCell::new(None::<i128>);
+        let print: RefCell<Option<u64>> = RefCell::new(None::<u64>);
 
         b.iter(|| {
             let result = branch_and_bound("umps10A", 5, 2);
@@ -87,7 +87,7 @@ mod benchs {
     
     #[bench]
     fn umps10B_5_2(b: &mut Bencher) {
-        let print: RefCell<Option<i128>> = RefCell::new(None::<i128>);
+        let print: RefCell<Option<u64>> = RefCell::new(None::<u64>);
 
         b.iter(|| {
             let result = branch_and_bound("umps10B", 5, 2);
@@ -100,7 +100,7 @@ mod benchs {
     
     #[bench]
     fn umps10C_5_2(b: &mut Bencher) {
-        let print: RefCell<Option<i128>> = RefCell::new(None::<i128>);
+        let print: RefCell<Option<u64>> = RefCell::new(None::<u64>);
 
         b.iter(|| {
             let result = branch_and_bound("umps10C", 5, 2);
@@ -113,7 +113,7 @@ mod benchs {
     
     // #[bench]
     // fn umps12_7_2(b: &mut Bencher) {
-    //     let print: RefCell<Option<i128>> = RefCell::new(None::<i128>);
+    //     let print: RefCell<Option<u64>> = RefCell::new(None::<u64>);
 
     //     b.iter(|| {
     //         let result = branch_and_bound("umps12", 7, 2);
@@ -126,7 +126,7 @@ mod benchs {
     
     // #[bench]
     // fn umps12_6_3(b: &mut Bencher) {
-    //     let print: RefCell<Option<i128>> = RefCell::new(None::<i128>);
+    //     let print: RefCell<Option<u64>> = RefCell::new(None::<u64>);
 
     //     b.iter(|| {
     //         let result = branch_and_bound("umps12", 6, 3);
@@ -139,7 +139,7 @@ mod benchs {
     
     // #[bench]
     // fn umps12_5_3(b: &mut Bencher) {
-    //     let print: RefCell<Option<i128>> = RefCell::new(None::<i128>);
+    //     let print: RefCell<Option<u64>> = RefCell::new(None::<u64>);
 
     //     b.iter(|| {
     //         let result = branch_and_bound("umps12", 5, 3);
@@ -152,7 +152,7 @@ mod benchs {
     
     // #[bench]
     // fn umps12_4_3(b: &mut Bencher) {
-    //     let print: RefCell<Option<i128>> = RefCell::new(None::<i128>);
+    //     let print: RefCell<Option<u64>> = RefCell::new(None::<u64>);
 
     //     b.iter(|| {
     //         let result = branch_and_bound("umps12", 4, 3);

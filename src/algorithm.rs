@@ -9,22 +9,31 @@ use std::fmt;
 use std::io::Write;
 use std::sync::mpsc;
 use std::sync::Arc;
+use std::time::Instant;
 
 // DEBUGGING
-const ENABLE_DEBUG_PRINT: bool = false;             // Print each time a new solution is found in Global
-const ENABLE_UPDATE_PRINTS: bool = false;           // Print each time the best found
+const ENABLE_DEBUG_PRINT: bool = false;
+const ENABLE_UPDATE_PRINTS: bool = false;
 const EXPORT_RESULT: bool = false;
 const PRINT_BEST_SOLUTION: bool = false;
 const PRINT_PRUNING_DEBUG: bool = false;
 const PRINT_INTERMEDIATE_MATRIX: bool = false;
 const PRINT_MODEL: bool = false;
+const PRINT_LB_PREPROCESSING_MESSAGE: bool = false;
+const PRINT_LB_EXPORT_MESSAGE: bool = false;
+const PRINT_K_VALUE: bool = false;
 
 // LOWERBOUND CALCULATIONS
 const ENABLE_LOWERBOUND: bool = true;
 const ENABLE_LOWERBOUND_PRUNING: bool = true;
 const PARRALLELIZE_LOWERBOUND: bool = true;
-const EXPORT_LB_MATRIX: bool = false;
+const EXPORT_LB_MATRIX: bool = true;
+const EXPORT_LB_PREPROCESSING_MATRIX: bool = true;
 const FIXATE_LB: bool = true;
+const SOLVE_PROBLEM: bool = true;
+
+// PARTIAL MATCHING
+const ENABLE_PARTIAL_MATCHING: bool = true;
 
 // GLOBAL PROBLEM
 const ENABLE_UPPERBOUND_PRUNING: bool = true;
@@ -40,7 +49,7 @@ const ENABLE_Q2_PRUNING: bool = true;
 #[derive(Debug, Clone)]
 pub struct Data {
     pub num_teams: i32,
-    pub dist: Vec<Vec<i128>>,
+    pub dist: Vec<Vec<u64>>,
     pub opponents: Vec<Vec<i32>>,
 }
 
@@ -59,7 +68,7 @@ pub fn read_data(file_path: &str) -> io::Result<Data> {
             num_teams = line.split("=").nth(1).unwrap().split(";").nth(0).unwrap().trim().parse().unwrap();
         }
         if line.contains("dist") {
-            dist = read_array_i128(&mut lines, num_teams as usize)?;
+            dist = read_array_u64(&mut lines, num_teams as usize)?;
         }
         if line.contains("opponents") {
             opponents = read_array_i32(&mut lines, 2 * num_teams as usize - 2)?;
@@ -73,17 +82,17 @@ pub fn read_data(file_path: &str) -> io::Result<Data> {
     })
 }
 
-fn read_array_i128(
+fn read_array_u64(
     lines: &mut std::io::Lines<BufReader<File>>,
     rows: usize
-) -> io::Result<Vec<Vec<i128>>> {
+) -> io::Result<Vec<Vec<u64>>> {
     let mut array = Vec::new();
 
     for _ in 0..rows {
         let line = lines.next().unwrap()?;
-        let row: Vec<i128> = line.split(|c: char| c == '[' || c == ']' || c.is_whitespace())
+        let row: Vec<u64> = line.split(|c: char| c == '[' || c == ']' || c.is_whitespace())
             .filter(|part| !part.is_empty())
-            .map(|part| i128::from_str(part).unwrap())
+            .map(|part| u64::from_str(part).unwrap())
             .collect();
         array.push(row);
     }
@@ -222,7 +231,7 @@ struct Solution {
     assignments: Vec<Vec<(Option<i32>, Option<i32>)>>,
     pub num_umpires: usize,
     pub num_rounds: usize,
-    score: i128,
+    score: u64,
 }
 
 impl fmt::Display for Solution {
@@ -256,7 +265,8 @@ impl fmt::Display for Solution {
 impl Solution {
     pub fn new(
         num_rounds: usize,
-        num_umpires: usize) -> Self {
+        num_umpires: usize,
+    ) -> Self {
         Self {
             assignments: vec![vec![(None, None); num_umpires]; num_rounds],
             num_umpires,
@@ -273,6 +283,14 @@ impl Solution {
         self.assignments[round as usize][umpire_team as usize].0
     }
 
+    pub fn get_assignment(
+        &self,
+        umpire_team: i32,
+        round: i32,
+    ) -> (Option<i32>, Option<i32>) {
+        self.assignments[round as usize][umpire_team as usize]
+    }
+
     pub fn get_out_player(
         &self,
         umpire_team: i32,
@@ -287,7 +305,7 @@ impl Solution {
         umpire_team: i32,
         round: i32,
         data: &Data,
-    ) -> i128 {
+    ) -> u64 {
         if round <= 0 {
             return 0;
         }
@@ -295,7 +313,7 @@ impl Solution {
         let previous_location = self.assignments[(round - 1) as usize][umpire_team as usize].0;
         
         if previous_location.is_none() {
-            panic!("Previous location is None");
+            return 0;                           // TODO: check if allowed
         }
 
         if previous_location.unwrap() <= 0 {
@@ -374,10 +392,54 @@ impl Solution {
         wtr.flush()?;
         Ok(())
     }
+
+    pub fn get_unsucceeded(
+        &self,
+        round_index: usize,
+        current_predecessor: (Option<i32>, Option<i32>)
+    ) -> Vec<(Option<i32>, Option<i32>)> {
+        let mut output = Vec::new();
+
+        if round_index + 1 >= self.num_rounds {
+            for _ in 0..self.num_umpires {
+                output.push((None, None));
+            }
+
+            return output;
+        }
+
+        for (i, game) in self.assignments[round_index + 1].iter().enumerate() {
+            let predecessor = &self.assignments[round_index][i];
+            if (game.0.is_none() || game.1.is_none()) && predecessor.0 != current_predecessor.0 && predecessor.1 != current_predecessor.1 {
+                output.push(self.assignments[round_index][i]);
+            }
+        }
+
+        output
+    }
+
+    pub fn get_unused(
+        &self,
+        round_index: usize,
+        model: &Model,
+        used_game: &Game,
+    ) -> Vec<(Option<i32>, Option<i32>)> {
+        let mut output = Vec::new();
+        let assignments = &self.assignments[round_index];
+
+        for game in model.rounds[round_index].games.iter() {
+            let tuple = game.as_tuple();
+            if !assignments.contains(&tuple) && game.home_player != used_game.home_player && game.out_player != used_game.out_player {
+                output.push(tuple);
+            }
+        }
+
+        output
+    }
 }
 
 fn pretty_print(
-    matrix: &Vec<Vec<i128>>
+    matrix: &Vec<Vec<u64>>
 ) {
     for row in matrix {
         println!("{:?}", row);
@@ -388,7 +450,7 @@ pub fn branch_and_bound(
     file_name: &str,
     q1: i32,
     q2: i32
-) -> i128 {
+) -> u64 {
     let data = read_data(format!("resources/{}.txt", file_name).as_str()).unwrap();
     let model = Model::new(&data);
 
@@ -403,6 +465,7 @@ pub fn branch_and_bound(
     let mut input_round_lbs = vec![vec![0; model.num_rounds as usize]; model.num_rounds as usize];
 
     if ENABLE_LOWERBOUND {
+        let file_name_arc = Arc::new(file_name.to_owned());
         let handle = thread::spawn(
             move || {
                 calculate_lb(
@@ -410,7 +473,8 @@ pub fn branch_and_bound(
                     &data_clone_lb,
                     q1,
                     q2,
-                    tx
+                    tx,
+                    file_name_arc.as_str(),
                 )
             }
         );
@@ -427,87 +491,68 @@ pub fn branch_and_bound(
                     Err(_) => break,                                    // Handle other errors (e.g., disconnected)
                 }
             }
-            pretty_print(&input_round_lbs);
-
-            if EXPORT_LB_MATRIX {
-                let file_path = format!("results/{}_{}_{}_lb.txt", file_name, q1, q2);
-                let mut file = match File::create(&file_path) {
-                    Ok(file) => file,
-                    Err(e) => {
-                        eprintln!("Failed to create file: {}", e);
-                        return 42;
-                    }
-                };
-                for row in input_round_lbs.iter() {
-                    let row_str = row.iter()
-                                    .map(|&num| num.to_string())
-                                    .collect::<Vec<String>>()
-                                    .join(" ");
-                    if let Err(e) = writeln!(file, "{}", row_str) {
-                        eprintln!("Failed to write to file: {}", e);
-                        return 42;
-                    }
-                }
-
-                println!("Successfully exported the solution to {}", file_path);
-            }
+            // pretty_print(&input_round_lbs);
         }
 
         // pretty_print(&round_lbs.lock().unwrap());
     }
 
-    if PRINT_MODEL {
-        println!("Rounds:");
-        println!("{}", model);
-    }
-
-    let mut solution = Solution::new(model.num_rounds as usize, (data.num_teams / 2) as usize);
-    let initial = model.get_round(0);
-    
-    let mut first_round: i32 = 0;
-    if FIXATE_GLOBAL {
-        solution.fixate(initial, first_round as usize);
-        first_round += 1;
-    }
-
-    let best_solution = solution.clone();
-    let (best_solution, best_score, _, _, _) =
-        traverse(
-            best_solution,
-            999999999,
-            solution,
-            999999999,
-            0,
-            first_round,
-            q1,
-            q2,
-            &model,
-            &data,
-            &rx,
-            input_round_lbs,
-        );
-    
-    // println!("{}", best_solution);
-    if PRINT_BEST_SOLUTION {
-        println!("\nBest solution:");
-        println!("{}", best_solution);
-    }
-
-    
-    if EXPORT_RESULT {
-        let file_path = format!("results/{}_{}_{}.csv", file_name, q1, q2);
-        if let Err(e) = fs::create_dir_all("results") {
-            eprintln!("Failed to create directory 'results': {}", e);
-            return best_score; // Or handle the error as appropriate for your application
+    if SOLVE_PROBLEM {
+        if PRINT_MODEL {
+            println!("Rounds:");
+            println!("{}", model);
         }
-
-        match best_solution.export_to_csv(&file_path) {
-            Ok(_) => println!("Successfully exported the solution to {}", file_path),
-            Err(e) => eprintln!("Failed to export the solution: {}", e),
+    
+        let mut solution = Solution::new(model.num_rounds as usize, (data.num_teams / 2) as usize);
+        let initial = model.get_round(0);
+        
+        let mut first_round: i32 = 0;
+        if FIXATE_GLOBAL {
+            solution.fixate(initial, first_round as usize);
+            first_round += 1;
         }
+    
+        let best_solution = solution.clone();
+        let (best_solution, best_score, _, _, _) =
+            traverse(
+                best_solution,
+                999999999,
+                solution,
+                999999999,
+                0,
+                first_round,
+                q1,
+                q2,
+                &model,
+                &data,
+                &rx,
+                input_round_lbs,
+            );
+        
+        // println!("{}", best_solution);
+        if PRINT_BEST_SOLUTION {
+            println!("\nBest solution:");
+            println!("{}", best_solution);
+        }
+    
+        
+        if EXPORT_RESULT {
+            let file_path = format!("results/{}_{}_{}.csv", file_name, q1, q2);
+            if let Err(e) = fs::create_dir_all("results") {
+                eprintln!("Failed to create directory 'results': {}", e);
+                return best_score; // Or handle the error as appropriate for your application
+            }
+    
+            match best_solution.export_to_csv(&file_path) {
+                Ok(_) => println!("Successfully exported the solution to {}", file_path),
+                Err(e) => eprintln!("Failed to export the solution: {}", e),
+            }
+        }
+    
+        best_score
+    } else {
+        0
     }
-
-    best_score
 }
 
 pub fn calculate_lb(
@@ -515,18 +560,94 @@ pub fn calculate_lb(
     data: &Data,
     q1: i32,
     q2: i32,
-    tx: std::sync::mpsc::Sender<Vec<Vec<i128>>>,
+    tx: std::sync::mpsc::Sender<Vec<Vec<u64>>>,
+    file_name: &str,
 ) {
-    let mut round_lbs: Vec<Vec<i128>> = vec![vec![0; model.num_rounds as usize]; model.num_rounds as usize];
+    let mut round_lbs: Vec<Vec<u64>> = vec![vec![0; model.num_rounds as usize]; model.num_rounds as usize];
 
-    
+    let start = Instant::now();
+    for round_index in 0..(model.num_rounds-1) as usize {
+        let start_round = round_index as usize;
+        let end_round = (round_index + 1) as usize;
+        // println!("start_round = {}, end_round = {}", start_round, end_round);
+
+        let mut solution = Solution::new(model.num_rounds as usize, (data.num_teams / 2) as usize);
+        let initial = model.get_round(start_round as i32);
+        
+        let mut first_round: i32 = start_round as i32;
+        if FIXATE_LB {
+            solution.fixate(initial, first_round as usize);
+            first_round += 1;
+        }
+
+        let best_solution = solution.clone();
+        // println!("{}", end_round);
+        let (best_solution, _, _, _) = 
+            traverse_lb(
+                best_solution,
+                999999999,
+                solution,
+                999999999,
+                0,
+                first_round,
+                q1,
+                q2,
+                &model,
+                &data,
+                start_round,
+                end_round,
+                &round_lbs
+            );
+
+        let next_round = (round_index + 1) as usize;
+
+        for i in 0..=round_index as usize {
+            for j in next_round..model.num_rounds as usize {
+                round_lbs[i][j] = 
+                std::cmp::max(
+                    round_lbs[i][j],
+                    round_lbs[i][round_index] + best_solution.score + round_lbs[round_index][j]
+                );
+            }
+        }
+    }
+
+    if PRINT_LB_PREPROCESSING_MESSAGE {
+        let duration = start.elapsed();
+        println!("Lowerbound preprocessing done in {:?}", duration);
+    }
+
+    if EXPORT_LB_PREPROCESSING_MATRIX {
+        let file_path = format!("results/{}_{}_{}_preprocessed_lb.txt", file_name, q1, q2);
+        let mut file = match File::create(&file_path) {
+            Ok(file) => file,
+            Err(e) => {
+                eprintln!("Failed to create file: {}", e);
+                return;
+            }
+        };
+
+        for row in round_lbs.iter() {
+            let row_str = row.iter()
+                            .map(|&num| num.to_string())
+                            .collect::<Vec<String>>()
+                            .join(" ");
+            if let Err(e) = writeln!(file, "{}", row_str) {
+                eprintln!("Failed to write to file: {}", e);
+                return;
+            }
+        }
+
+        if PRINT_LB_EXPORT_MESSAGE {
+            let duration = start.elapsed();
+            println!("Successfully exported the solution to {}. LB thread finished in {:?}", file_path, duration);
+        }
+    }
 
     for k in 1..model.num_rounds {
         let r = model.num_rounds - k - 1;
-        // println!("r = {}, num_rounds = {}, k = {}", r, model.num_rounds, k);
         let start_round = r as usize;
         let end_round = (r + k) as usize;
-        // println!("start_round = {}, end_round = {}", start_round, end_round);
 
         let mut solution = Solution::new(model.num_rounds as usize, (data.num_teams / 2) as usize);
         let initial = model.get_round(start_round as i32);
@@ -556,9 +677,6 @@ pub fn calculate_lb(
                 &round_lbs
             );
 
-        // println!("Score = {}", best_solution.score);
-        // println!("{}", best_solution);
-
         for r1 in (0..=r).rev() {
             for r2 in (r + k)..model.num_rounds {
                 round_lbs[r1 as usize][r2 as usize] = 
@@ -566,15 +684,49 @@ pub fn calculate_lb(
                         round_lbs[r1 as usize][r2 as usize],
                         round_lbs[r1 as usize][r as usize] + best_solution.score + round_lbs[(r + k) as usize][r2 as usize]
                     );
-                match tx.send(round_lbs.clone()) {
-                    Ok(_) => {},
-                    Err(_) => return,
-                }
             }
+            match tx.send(round_lbs.clone()) {
+                Ok(_) => {},
+                Err(_) => return,
+            }
+        }
+
+
+        if PRINT_K_VALUE {
+            let duration = start.elapsed();
+            println!("{} in {:?}", k, duration);
         }
 
         if PRINT_INTERMEDIATE_MATRIX {
             pretty_print(&round_lbs);
+        }
+
+    }
+    
+    if EXPORT_LB_MATRIX {
+        let file_path = format!("results/{}_{}_{}_lb.txt", file_name, q1, q2);
+        let mut file = match File::create(&file_path) {
+            Ok(file) => file,
+            Err(e) => {
+                eprintln!("Failed to create file: {}", e);
+                return;
+            }
+        };
+
+        for row in round_lbs.iter() {
+            let row_str = row.iter()
+                            .map(|&num| num.to_string())
+                            .collect::<Vec<String>>()
+                            .join(" ");
+            if let Err(e) = writeln!(file, "{}", row_str) {
+                eprintln!("Failed to write to file: {}", e);
+                return;
+            }
+        }
+
+        if PRINT_LB_EXPORT_MESSAGE {
+            let duration = start.elapsed();
+            println!("Successfully exported the solution to {}. LB thread finished in {:?}", file_path, duration);
         }
     }
 }
@@ -584,15 +736,17 @@ fn is_terminal_lb(
     current_umpire: i32,
     current_round: i32,
     end_round: usize,
+    lowerbound: u64,
+    upperbound: u64,
 ) -> bool {
-    current_umpire + 1 == solution.num_umpires as i32 && current_round == end_round as i32
+    lowerbound == upperbound || current_umpire + 1 == solution.num_umpires as i32 && current_round == end_round as i32
 }
 
 fn traverse_lb(
     mut best_solution: Solution,
-    mut best_score: i128,
+    mut best_score: u64,
     mut solution: Solution,
-    mut upperbound: i128,
+    mut upperbound: u64,
     current_umpire: i32,
     current_round: i32,
     q1: i32,
@@ -601,8 +755,8 @@ fn traverse_lb(
     data: &Data,
     start_round: usize,
     end_round: usize,
-    round_lbs: &Vec<Vec<i128>>,
-) -> (Solution, i128, Solution, i128) {
+    round_lbs: &Vec<Vec<u64>>,
+) -> (Solution, u64, Solution, u64) {
     let next_umpire = (current_umpire + 1) % (solution.num_umpires as i32);
     let next_round = if current_umpire == solution.num_umpires as i32 - 1 { current_round + 1 } else { current_round };
 
@@ -636,6 +790,9 @@ fn traverse_lb(
             }
 
             if !assignment_feasible {
+                if PRINT_PRUNING_DEBUG {
+                    println!("({}, {}) -> LB ASSIGNMENT", game.home_player, game.out_player);
+                }
                 continue;
             }
         }
@@ -660,6 +817,9 @@ fn traverse_lb(
             }
 
             if !q1_feasible {
+                if PRINT_PRUNING_DEBUG {
+                    println!("({}, {}) -> LB Q1", game.home_player, game.out_player);
+                }
                 continue;
             }
         }
@@ -697,26 +857,96 @@ fn traverse_lb(
             }
     
             if !q2_feasible {
+                if PRINT_PRUNING_DEBUG {
+                    println!("({}, {}) -> LB Q2", game.home_player, game.out_player);
+                }
                 continue;
             }
         }
         
-        solution.assign(game, current_umpire, current_round, data);
+        let extra_distance = solution.get_extra_distance(game.home_player, current_umpire, current_round, data);
         let mut lowerbound = round_lbs[current_round as usize][end_round];
-
+        
         if !ENABLE_LOWERBOUND_PRUNING {
             lowerbound = 0;
         }
 
-        if solution.score + lowerbound >= upperbound {
-            solution.unassign( current_umpire, current_round, data);
+        let mut m = 0;
+
+        if ENABLE_PARTIAL_MATCHING && current_round > 0 && current_round < (solution.num_rounds - 1) as i32 {
+            // println!("{}", solution);
+            let my_previous = solution.get_assignment(current_umpire, current_round - 1);
+            // dbg!(my_previous);
+            let unsucceeded = solution.get_unsucceeded((current_round - 1) as usize, my_previous);
+            let unused = solution.get_unused(current_round as usize, model, game);
+
+            // dbg!(&unsucceeded);
+            // dbg!(&unused);
+            // println!("{}", unsucceeded.len() == unused.len());
+
+            if unsucceeded.len() == unused.len() 
+            && !unused.iter().any(|(first, second)| first.is_none() || second.is_none())
+            && !unsucceeded.iter().any(|(first, second)| first.is_none() || second.is_none()) {
+                let size = unsucceeded.len();
+                let mut matrix = vec![0; size * size];
+                for (from_index, from) in unsucceeded.iter().enumerate() {
+                    for (to_index, to) in unused.iter().enumerate() {
+                        matrix[from_index * size + to_index] = data.dist[(from.0.unwrap() - 1) as usize][(to.0.unwrap() - 1) as usize];
+                    }
+                }
+
+                // let previous_home = solution.get_home_player(current_umpire, current_round - 1);
+                // let previous_out = solution.get_out_player(current_umpire, current_round - 1);
+
+                // let mut my_index: i32 = -1;
+                // for i in 0..unsucceeded.len() {
+                //     let element = unsucceeded[i];
+                //     if element.0 == previous_home && element.1 == previous_out {
+                //         my_index = i as i32;
+                //         break;
+                //     }
+                // }
+
+                let optimal_assignments = hungarian::minimize(&matrix, size, size);
+                m = optimal_assignments.iter()
+                                    .enumerate()
+                                    .filter_map(|(i, &a)| {
+                                        a.map(|j| matrix[i*size + j])
+                                    })
+                                    .sum();
+                // println!("{}", m);
+                // if my_index >= 0 && my_index < size as i32 {
+                //     // dbg!(my_index);
+                //     // dbg!(&matrix);
+                //     // dbg!(&unsucceeded);
+                //     // dbg!(&unused);
+                //     // dbg!(current_umpire);
+                //     // dbg!(&optimal_assignments);
+                //     let next_umpire_assignment = unused[optimal_assignments[my_index as usize].unwrap()];
+                //     m = solution.get_extra_distance(next_umpire_assignment.0.unwrap(), current_umpire, current_umpire, data);
+                    
+                //     println!("{}", m);
+                // }
+            }
+        }
+        
+        if solution.score + extra_distance + lowerbound + m >= upperbound {
+            if PRINT_PRUNING_DEBUG {
+                println!("LB EVAL");
+            }
             continue;
         }
+        
+        solution.assign(game, current_umpire, current_round, data);
 
-        let is_terminal = is_terminal_lb(&solution, current_umpire, current_round, end_round);
-        if is_terminal {
+        if is_terminal_lb(&solution, current_umpire, current_round, end_round, lowerbound, upperbound) {
             if solution.score < best_score {
                 best_score = solution.score;
+
+                if ENABLE_UPDATE_PRINTS {
+                    println!("best_score = {}", best_score);
+                    println!("{}", solution);
+                }
                 
                 if ENABLE_UPPERBOUND_PRUNING {
                     upperbound = solution.score;
@@ -753,26 +983,26 @@ fn is_terminal(
     solution: &Solution,
     current_umpire: i32,
     current_round: i32,
-    lowerbound: i128,
-    upperbound: i128,
+    lowerbound: u64,
+    upperbound: u64,
 ) -> bool {
     lowerbound == upperbound || current_umpire + 1 == solution.num_umpires as i32 && current_round + 1 == solution.num_rounds as i32
 }
 
-fn traverse (
+fn traverse(
     mut best_solution: Solution,
-    mut best_score: i128,
+    mut best_score: u64,
     mut solution: Solution,
-    mut upperbound: i128,
+    mut upperbound: u64,
     current_umpire: i32,
     current_round: i32,
     q1: i32,
     q2: i32,
     model: &Model,
     data: &Data,
-    rx: &std::sync::mpsc::Receiver<Vec<Vec<i128>>>,
-    mut input_round_lbs: Vec<Vec<i128>>,
-) -> (Solution, i128, Solution, i128, Vec<Vec<i128>>) {
+    rx: &std::sync::mpsc::Receiver<Vec<Vec<u64>>>,
+    mut input_round_lbs: Vec<Vec<u64>>,
+) -> (Solution, u64, Solution, u64, Vec<Vec<u64>>) {
     if ENABLE_DEBUG_PRINT {
         println!("current_umpire = {}, current_round = {}, best_score = {}, upperbound = {}", current_umpire, current_round, best_score, upperbound); 
     }
@@ -915,7 +1145,6 @@ fn traverse (
         }
         
         let extra_distance = solution.get_extra_distance(game.home_player, current_umpire, current_round, data);
-
         let mut received_lbs = None;
 
         if PARRALLELIZE_LOWERBOUND {
@@ -930,8 +1159,11 @@ fn traverse (
                 }
             }
         }
+
+        // println!("here");
+        // pretty_print(&input_round_lbs);
         
-        let mut lowerbound = 0;
+        let lowerbound;
         
         match &received_lbs {
             None => lowerbound = input_round_lbs[current_round as usize][(solution.num_rounds - 1) as usize],
@@ -942,10 +1174,67 @@ fn traverse (
                 // println!("{}", lowerbound);
             },
         };
+
+        let mut m = 0;
+
+        if ENABLE_PARTIAL_MATCHING && current_round > 0 && current_round < (solution.num_rounds - 1) as i32 {
+            // println!("{}", solution);
+            let my_previous = solution.get_assignment(current_umpire, current_round - 1);
+            // dbg!(my_previous);
+            let unsucceeded = solution.get_unsucceeded((current_round - 1) as usize, my_previous);
+            let unused = solution.get_unused(current_round as usize, model, game);
+
+            // dbg!(&unsucceeded);
+            // dbg!(&unused);
+            // println!("{}", unsucceeded.len() == unused.len());
+
+            if unsucceeded.len() == unused.len() 
+            && !unused.iter().any(|(first, second)| first.is_none() || second.is_none())
+            && !unsucceeded.iter().any(|(first, second)| first.is_none() || second.is_none()) {
+                let size = unsucceeded.len();
+                let mut matrix = vec![0; size * size];
+                for (from_index, from) in unsucceeded.iter().enumerate() {
+                    for (to_index, to) in unused.iter().enumerate() {
+                        matrix[from_index * size + to_index] = data.dist[(from.0.unwrap() - 1) as usize][(to.0.unwrap() - 1) as usize];
+                    }
+                }
+
+                // let previous_home = solution.get_home_player(current_umpire, current_round - 1);
+                // let previous_out = solution.get_out_player(current_umpire, current_round - 1);
+
+                // let mut my_index: i32 = -1;
+                // for i in 0..unsucceeded.len() {
+                //     let element = unsucceeded[i];
+                //     if element.0 == previous_home && element.1 == previous_out {
+                //         my_index = i as i32;
+                //         break;
+                //     }
+                // }
+
+                let optimal_assignments = hungarian::minimize(&matrix, size, size);
+                m = optimal_assignments.iter()
+                                    .enumerate()
+                                    .filter_map(|(i, &a)| {
+                                        a.map(|j| matrix[i*size + j])
+                                    })
+                                    .sum();
+                // println!("{}", m);
+                // if my_index >= 0 && my_index < size as i32 {
+                //     // dbg!(my_index);
+                //     // dbg!(&matrix);
+                //     // dbg!(&unsucceeded);
+                //     // dbg!(&unused);
+                //     // dbg!(current_umpire);
+                //     // dbg!(&optimal_assignments);
+                //     let next_umpire_assignment = unused[optimal_assignments[my_index as usize].unwrap()];
+                //     m = solution.get_extra_distance(next_umpire_assignment.0.unwrap(), current_umpire, current_umpire, data);
+                    
+                //     println!("{}", m);
+                // }
+            }
+        }
         
-        // println!("{}", lowerbound);
-        
-        if solution.score + extra_distance + lowerbound >= upperbound {
+        if solution.score + extra_distance + lowerbound + m >= upperbound {
             if PRINT_PRUNING_DEBUG {
                 println!("EVAL");
             }
