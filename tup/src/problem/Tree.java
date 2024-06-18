@@ -13,42 +13,43 @@ import static model.Instance.*;
 import static problem.Utility.calculateVec;
 
 public class Tree {
-
     private final Instance instance;
     private LowerboundCalculator lowerboundCalculator;
     private final Pruner pruner;
     private final Matcher matcher;
 
-    private final boolean isSub;
+    private final boolean isSub; // true if sub-tree, false if global tree
 
-    private final int[][] solution;
-    private int[][] UBSolution;
+    private final int[][] solution; // current solution
+    private int[][] UBSolution; // assignment of lowest distance
 
-    private final int startRoundIndex;
-    private final int endRoundIndex;
+    private final int startRoundIndex; // 0 for global, startRound for sub
+    private final int endRoundIndex; // NUM_ROUNDS - 1 for global, endRound for sub
 
-    private int upperbound = Integer.MAX_VALUE;
+    private int upperbound = Integer.MAX_VALUE; // best found distance is infinity
     private int lowerbound;
 
     public final int[][] umpireScheduleByRound;
     private final int[] gameUmpireLookup;
 
-    private final int branchStart;
+    private final int branchStart; // first game of the tree / sub-tree
 
-    private HashSet<Integer> prunedGames;
+    private HashSet<Integer> prunedGames; // pruned games by Pruner
 
-    private int partialMatchingDistance;
-    private int partialDistance;
-    private int totalDistance;
-    private int eval;
+    private int partialMatchingDistance; // distance from the Matcher's Matching Problem
+    private int partialDistance; // the extra cost bc of the assignment
+    private int totalDistance; // total distance of the solution
+    private int eval; // infeasibility
 
     private final Map<BranchStrategy, Runnable> strategyMap = new HashMap<>();
-
+    
+    // debugging
     private int skips = 0;
     private int numSkippedBranches = 0;
     private int numSkippedBranchesAfterPM = 0;
     private int numSkippedBranchesBeforePM = 0;
 
+    // for the global constraint
     public final int[][] stadiumCount = new int[NUM_UMPIRES][NUM_TEAMS];
 
     public Tree(Instance instance, int startRoundIndex, int endRoundIndex, boolean isSub) {
@@ -69,14 +70,17 @@ public class Tree {
      */
 
     public void startGlobalTraversal() {
+        // fixates the first round to prevent rotation of the solution
         preventSolutionRotation();
         if (LOWERBOUND_ENABLED) {
             //System.out.println("wel lowerbound");
             CompletableFuture<Void> lowerboundFuture = ASYNC ? startLowerBoundCalculationAsync() : null;
+            // start from the round after the fixated round
             performTraversal(0, startRoundIndex + 1);
             cancelLowerBoundCalculation(lowerboundFuture);
         } else {
             //System.out.println("geen lowerbound");
+            // start from the round after the fixated round
             performTraversal(0, startRoundIndex + 1);
         }
     }
@@ -87,7 +91,9 @@ public class Tree {
 
     public void startSubTraversal(LowerboundCalculator lowerboundCalculator) {
         this.lowerboundCalculator = lowerboundCalculator;
+        // fixates the first round to prevent rotation of the solution
         preventSolutionRotation();
+        // start from the round after the fixated round
         performTraversal(0, startRoundIndex + 1);
     }
 
@@ -107,6 +113,7 @@ public class Tree {
 
     public CompletableFuture<Void> startLowerBoundCalculationAsync() {
         lowerboundCalculator = new LowerboundCalculator(this);
+        // do the 2 round matching + LB incremental Tree search
         return CompletableFuture.runAsync(lowerboundCalculator::calculateLBs);
     }
 
@@ -119,9 +126,9 @@ public class Tree {
         if (DEBUG_PRUNER) {
             pruner.printPruningInfo();
         }
-
+        
         int[][] gameGreedyDistance = createGameGreedyDistanceArray(umpire, currentRoundIndex);
-        // todo: voorzie iets intuïtiever
+
         strategyMap.put(BranchStrategy.BFS_DISTANCE, () -> sortGameGreedyDistanceArray(gameGreedyDistance));
         strategyMap.put(BranchStrategy.SHUFFLE, () -> {/* todo */});
         strategyMap.put(BranchStrategy.DFS, () -> {/* no action required */});
@@ -197,6 +204,7 @@ public class Tree {
         int[] sortedListOfFeasibleAllocations = getFeasibleAllocations(umpire, currentRoundIndex);
         // Iterate through each feasible allocation
         for (int a : sortedListOfFeasibleAllocations) {
+            // continue if it's not an infeasible game..
             if (a != UNASSIGNED) {
                 assign(a, umpire);
 
@@ -208,12 +216,14 @@ public class Tree {
 
                 //System.out.println("PartialDist: " + partialDistance + ", upperb: " + upperbound);
                 if (!isPromisingBeforePartialMatch()) {
+                    // no point continueing
                     unassign(a, umpire);
                     numSkippedBranches++;
                     numSkippedBranchesBeforePM++;
                     continue; // Prune the branch
                 }
 
+                // Solve the sub graph for the Partial Matching
                 if (ENABLE_PARTIAL_MATCHING) {
                     // Calculate schedule
                     BitSet vec = calculateVec(umpire, currentRoundIndex, umpireScheduleByRound);
@@ -222,17 +232,20 @@ public class Tree {
                 }
                 // System.out.println("partialMatchingDistance: " +  partialMatchingDistance);
                 if (!isPromisingAfterPartialMatch()) {
+                    // no point continueing
                     unassign(a, umpire);
                     numSkippedBranches++;
                     numSkippedBranchesAfterPM++;
                     continue; // Prune the branch
                 }
-
+                // We're done. (Local Search not implemented)
                 if (isReadyForLocalSearch(umpire, currentRoundIndex)) {
                     IntStream.rangeClosed(branchStart, NUM_UMPIRES * (1 + endRoundIndex) - 1).forEach(g -> solution[getGame(g).getRound()][gameUmpireLookup[g]] = g);
                     if (evaluate(currentRoundIndex) < upperbound) {
+                        // Better solution found. Set the UB.
                         setUpperbound();
                         if (!isSub) {
+                            // Only print gap if it's not a sub-tree.
                             printDebugInfo();
                         }
                     }
@@ -240,6 +253,8 @@ public class Tree {
                     // Recur to the next umpire and round
                     performTraversal(getNextUmpireId(umpire), getNextRoundIndex(umpire, currentRoundIndex));
                 }
+
+                // Unassign. This way we don't have to take copies of the assignments.
                 unassign(a, umpire);
             }
         }
@@ -301,6 +316,7 @@ public class Tree {
      */
 
     public int evaluate(int roundId) {
+        // Calculate the distance.
         totalDistance = IntStream.range(startRoundIndex, endRoundIndex).map(round -> IntStream.range(0, NUM_UMPIRES).map(umpireId -> {
             int nextRound = round + 1;
             int nextStadium = getGame(solution[nextRound][umpireId]).getHomePlayerId();
@@ -308,6 +324,7 @@ public class Tree {
             return getTravelDistanceBetween(nextStadium, currentStadium);
         }).sum()).sum();
 
+        // Only evaluate global constraint if it's the global tree.
         if (!isSub) {
             evaluateGlobalConstraint(roundId);
         }

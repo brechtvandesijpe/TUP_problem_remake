@@ -10,9 +10,13 @@ import static main.Config.*;
 import static model.Instance.getTravelDistanceBetween;
 import static subproblem.match.MatchFactory.createMatchAlgorithm;
 
+/**
+ * This class is responsible for calculating the initial 2 round lower bounds
+*/
+
 public class LowerboundMatch {
     private final int[][] costArray;
-    private final int MAX = 999999;
+    private final int MAX = 999999; 
 
     public LowerboundMatch() {
         this.costArray = new int[NUM_UMPIRES][NUM_UMPIRES];

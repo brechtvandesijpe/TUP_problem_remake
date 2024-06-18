@@ -3,6 +3,10 @@ package problem;
 import java.util.HashMap;
 import java.util.Map;
 
+/*
+ * 
+ *  Unused.
+ */
 public class PreloadBounds {
     // todo: preload bounds om betere bounds te bekomen
     private Map<String, Integer> lowerbounds;

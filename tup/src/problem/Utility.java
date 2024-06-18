@@ -5,8 +5,15 @@ import java.util.stream.IntStream;
 
 import static main.Config.NUM_UMPIRES;
 
-public class Utility {
 
+/**
+ * Provides utility functions for hashing.
+ */
+
+public class Utility {
+    
+    // values don't matter as long as the prime is high enough. 
+    // make sure no collisions occur.
     private static final int PRIME = 31;
     private static final int MULTIPLIER = 1223;
     private static final int SET = 1231;

@@ -47,6 +47,7 @@ public class Matcher {
 
         this.branchStart = NUM_UMPIRES * roundIndex;
         this.subGraphSize = subGraphSize;
+
         if (ENABLE_HASHING) {
             int partialMatchingDistance;
             int key = blend(roundIndex, vec);
@@ -70,10 +71,16 @@ public class Matcher {
             }
             return partialMatchingDistance;
         } else {
+            // dont cache anything
             makeSubGraph(vec);
             return calculateDistance();
         }
     }
+
+
+     /**
+     * Constructs the subgraph for the current matching problem.
+     */
 
     public void makeSubGraph(BitSet vec) {
         int[][] freeIndices = createFreeIndices(vec);
@@ -96,6 +103,10 @@ public class Matcher {
         return freeIndices;
     }
 
+      /**
+     * Calculates the total travel distance for the current matching problem.
+     */
+
     public int calculateDistance() {
         Match matchAlgorithm = createMatchAlgorithm(MATCH_TYPE);
         int result = 0;
@@ -114,11 +125,16 @@ public class Matcher {
         return result;
     }
 
+    /**
+     * Calculates the inter-game distance between two games, considering feasibility.
+     */
+
     private int getInterGameDistance(int gameId, int gameId2) {
         Game g1 = getGame(branchStart + gameId);
         int nextBranchStart = branchStart + NUM_UMPIRES;
         Game g2 = getGame(nextBranchStart + gameId2);
         int interStadiumDist = getInterStadiumDistance(g1, g2);
+        // no point continuing if is infeasible
         return isFeasible(g1, g2) ? interStadiumDist : INFEASIBLE;
     }
 

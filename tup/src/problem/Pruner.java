@@ -10,8 +10,11 @@ import static main.Config.*;
 import static model.Instance.determineGameForPlayer;
 import static model.Instance.getGame;
 
-public class Pruner {
+/**
+ * The Pruner class is responsible for pruning games from the scheduling possibilities
+*/
 
+public class Pruner {
     private final Tree tree;
     private HashSet<Integer> prunedGames;
     private int startRoundForQ1Constraint;
@@ -25,14 +28,14 @@ public class Pruner {
         this.tree = tree;
     }
 
-    // todo: vooraf prunen op global?
-
     /**
      * Initializes the pruner for a given round.
      */
 
     public void initPruner(int currentRoundIndex) {
+        // check Q1 from this round and onwards
         this.startRoundForQ1Constraint = Math.max(currentRoundIndex + 1 - Config.Q1, tree.getStartRoundIndex());
+        // check Q2 from this round and onwards
         this.startRoundForQ2Constraint = Math.max(currentRoundIndex + 1 - Config.Q2, tree.getStartRoundIndex());
         this.prunedGames = new HashSet<>();
     }
@@ -46,6 +49,7 @@ public class Pruner {
         pruneBasedOnQ1Constraint(umpire, currentRoundIndex);
         pruneBasedOnQ2Constraint(umpire, currentRoundIndex);
         pruneBasedOnPreviousAssignments(umpire, currentRoundIndex);
+        // Only prune global if the tree is not a sub tree, and if it's enabled in the config
         if(!tree.isSub() && PREPRUNE_GLOBAL) {
             pruneGlobal(currentRoundIndex);
         }
@@ -53,6 +57,10 @@ public class Pruner {
         return prunedGames;
     }
 
+
+    /**
+     * Prunes games globally based on the remaining rounds and stadium counts.
+     */
 
     public void pruneGlobal(int roundIndex) {
         int[][] stadiumCounts = tree.getStadiumCount();
@@ -82,8 +90,10 @@ public class Pruner {
     public void pruneBasedOnQ1Constraint(int umpire, int roundIndex) {
         for (int r = startRoundForQ1Constraint; r < roundIndex; r++) {
             int playerId = getGame(tree.umpireScheduleByRound[umpire][r]).getHomePlayerId();
+             // isAssigned is false if it's an infeasible game.
             if (isAssigned(Instance.roundStadium[roundIndex][playerId])) {
                 int stadiumIndex = Math.floorMod(Instance.roundStadium[roundIndex][playerId], NUM_UMPIRES);
+                // isAssigned is false if it's an infeasible game.
                 if (isAssigned(stadiumIndex)) {
                     prunedGames.add(stadiumIndex);
                 }
@@ -125,6 +135,7 @@ public class Pruner {
      */
 
     public boolean isAssigned(int gameId) {
+        // negative game id -> infeasible
         return 0 <= gameId;
     }
 
