@@ -6,8 +6,7 @@ import model.Instance;
 import java.util.HashSet;
 import java.util.stream.IntStream;
 
-import static main.Config.NUM_TEAMS;
-import static main.Config.NUM_UMPIRES;
+import static main.Config.*;
 import static model.Instance.determineGameForPlayer;
 import static model.Instance.getGame;
 

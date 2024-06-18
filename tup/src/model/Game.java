@@ -1,7 +1,12 @@
 package model;
 
+/**
+ * Represents a game in the tournament scheduling problem.
+ * Each game is uniquely identified and associated with a specific round, home player, and out player.
+ */
+
 public class Game {
-    public static int gameId;
+    public static int gameId; // Static counter to assign unique IDs to each game instance
 
     private final int id;
     private final int round;

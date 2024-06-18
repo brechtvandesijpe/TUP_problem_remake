@@ -14,6 +14,12 @@ import java.util.stream.IntStream;
 
 import static main.Config.*;
 
+/**
+ * This class is responsible for calculating the lower bounds for a given problem instance.
+ * It utilizes different algorithms and strategies to compute initial lower bounds, strengthen them,
+ * and propagate the results to improve the overall lower bound of the problem.
+ */
+
 public class LowerboundCalculator {
     private final Instance instance;
     public int[][] roundLBs;
@@ -37,19 +43,24 @@ public class LowerboundCalculator {
     public void calculateLBs() {
         // PART 1: Calculate initial lower bounds for all pairs of rounds using the values of the matchings between every two consecutive rounds
         if (MATCH_LOWERBOUND) {
+            // Use Hungarian or JonkerVolgenant for a 2-round matching
             if (Config.LB_MATCH == LowerboundMatchType.MATCH_ALGORITHM) {
                 //System.out.println("Chose MATCH_ALGORITHM");
                 IntStream.range(0, NUM_ROUNDS - 1).forEach(roundIndex -> {
                     int newLowerBoundValue = lowerboundMatch.calculateRoundMatching(roundIndex);
                     int nextRound = roundIndex + 1;
+                    // Dynamic programming
                     IntStream.rangeClosed(0, roundIndex).forEach(i -> IntStream.rangeClosed(nextRound, NUM_ROUNDS - 1).forEach(j -> roundLBs[i][j] = Math.max(roundLBs[i][j], roundLBs[i][roundIndex] + newLowerBoundValue + roundLBs[roundIndex][j])));
                 });
+              // Use 2-deep Branch and Bound for a 2-round matching
             } else if (Config.LB_MATCH == LowerboundMatchType.BRANCH_AND_BOUND_2_DEEP) {
                 for (int roundIndex = 0; roundIndex < NUM_ROUNDS - 1; roundIndex++) {
+                    // 2-deep tree search
                     Tree tree = new Tree(instance, roundIndex, roundIndex + 1, true);
                     tree.startSubTraversal(this);
                     int newLowerBoundValue = tree.getTotalDistance();
                     int nextRound = roundIndex + 1;
+                    // Dynamic programming
                     for (int i = 0; i <= roundIndex; i++) {
                         for (int j = nextRound; j < NUM_ROUNDS; j++) {
                             roundLBs[i][j] = Math.max(roundLBs[i][j], roundLBs[i][roundIndex] + newLowerBoundValue + roundLBs[roundIndex][j]);
@@ -57,7 +68,8 @@ public class LowerboundCalculator {
                     }
                 }
             }else {
-
+                 // Additional strategies can be implemented here
+                 // Not that useful as it only gets called once.
             }
         }
 
@@ -66,6 +78,7 @@ public class LowerboundCalculator {
             int r = NUM_ROUNDS - 1 - k;
             Tree tree = new Tree(instance, r, r + k, true);
             tree.startSubTraversal(this);
+            // contains lowest found distance
             int solutionValue = tree.getTotalDistance();
             for (int r1 = r; r1 >= 0; r1--) {
                 for (int r2 = r + k; r2 <= NUM_ROUNDS - 1; r2++) {
@@ -164,6 +177,7 @@ public class LowerboundCalculator {
         return (endTime - startTime) / 1_000_000_000.0;
     }
 
+    // for tests
     public void clearLBs() {
         roundLBs = new int[NUM_ROUNDS][NUM_ROUNDS];
     }

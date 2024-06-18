@@ -3,6 +3,10 @@ package localsearch;
 import main.Config;
 import metaheuristics.MetaType;
 
+/*
+ * Local Search hasn't been implemented yet. 
+ */
+
 public class LocalSearch {
     private MetaType metaheuristic;
 
