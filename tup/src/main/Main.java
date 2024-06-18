@@ -33,6 +33,16 @@ public class Main {
     }
 
 
+    private void writeHitRatioToCSV(String instanceFileName, double hitRatio, int accessCount) {
+        String filePath = "hitratio.csv";
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath, true))) {
+            writer.write(instanceFileName + "," + String.format("%.4f", hitRatio) + "," + accessCount  + "\n");
+        } catch (IOException e) {
+            System.err.println("Error writing to CSV: " + e.getMessage());
+        }
+    }
+
+
 
     public static void main(String[] args) throws IOException {
         Main main = new Main();
@@ -149,7 +159,7 @@ public class Main {
         }
 
         writeToCSV(instanceFileName, ((endExecution - startExecution) / 1_000_000_000.0));
-
+        writeHitRatioToCSV(instanceFileName, tree.getMatcher().getHitRatio(), tree.getMatcher().getAccessCount());
 
         // Prints the diagonal LB array
         if (PRINT_LB_ARRAY) {
@@ -170,5 +180,6 @@ public class Main {
         // - Hungarian/Jonker-Volgenant
         tree.getLowerboundCalculator().clearLBs();
         tree.getLowerboundCalculator().timeAndLogLBMatchAlgorithms();
+        tree.getMatcher().printCacheHitRatio();
     }
 }

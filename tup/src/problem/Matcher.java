@@ -144,6 +144,14 @@ public class Matcher {
         return hitRatio;
     }
 
+    public double getHitRatio() {
+        return (double) cacheHits / (cacheHits + cacheMisses);
+    }
+
+    public int getAccessCount() {
+        return cacheHits + cacheMisses;
+    }
+
     public void saveValueToCache(int key, int value) {
         previouslySolved.put(key, value);
     }
