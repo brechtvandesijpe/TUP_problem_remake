@@ -3,13 +3,12 @@ package main;
 import file.Reader;
 import model.Game;
 import model.Instance;
+import problem.Tree;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
-
-import problem.Tree;
 
 import static main.Config.*;
 
