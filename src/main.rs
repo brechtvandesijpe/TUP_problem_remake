@@ -49,14 +49,14 @@ fn main() {
     bench("umps12", 5, 3, 93679);
     bench("umps12", 4, 3, 89826);
     
-    // bench("umps14", 8, 3, 172177);
-    // bench("umps14", 8, 2, 147824);
-    // bench("umps14", 7, 3, 164440);
-    // bench("umps14", 7, 2, 146656);
-    // bench("umps14", 6, 3, 158875);
-    // bench("umps14", 6, 2, 145124);
-    // bench("umps14", 5, 3, 154962);
-    // bench("umps14", 5, 2, 143357);
+    bench("umps14", 8, 3, 172177);
+    bench("umps14", 8, 2, 147824);
+    bench("umps14", 7, 3, 164440);
+    bench("umps14", 7, 2, 146656);
+    bench("umps14", 6, 3, 158875);
+    bench("umps14", 6, 2, 145124);
+    bench("umps14", 5, 3, 154962);
+    bench("umps14", 5, 2, 143357);
     
     // bench("umps14A", 8, 3, 166184);
     // bench("umps14A", 8, 2, 143043);

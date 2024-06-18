@@ -22,6 +22,7 @@ const PRINT_MODEL: bool = false;
 const PRINT_LB_PREPROCESSING_MESSAGE: bool = false;
 const PRINT_LB_EXPORT_MESSAGE: bool = false;
 const PRINT_K_VALUE: bool = false;
+const ENABLE_UPPERBOUND_UPDATE_PRINTS: bool = false;
 
 // LOWERBOUND CALCULATIONS
 const ENABLE_LOWERBOUND: bool = true;
@@ -33,7 +34,7 @@ const FIXATE_LB: bool = true;
 const SOLVE_PROBLEM: bool = true;
 
 // PARTIAL MATCHING
-const ENABLE_PARTIAL_MATCHING: bool = true;
+const ENABLE_PARTIAL_MATCHING: bool = false;
 
 // GLOBAL PROBLEM
 const ENABLE_UPPERBOUND_PRUNING: bool = true;
@@ -396,7 +397,6 @@ impl Solution {
     pub fn get_unsucceeded(
         &self,
         round_index: usize,
-        current_predecessor: (Option<i32>, Option<i32>)
     ) -> Vec<(Option<i32>, Option<i32>)> {
         let mut output = Vec::new();
 
@@ -410,7 +410,7 @@ impl Solution {
 
         for (i, game) in self.assignments[round_index + 1].iter().enumerate() {
             let predecessor = &self.assignments[round_index][i];
-            if (game.0.is_none() || game.1.is_none()) && predecessor.0 != current_predecessor.0 && predecessor.1 != current_predecessor.1 {
+            if game.0.is_none() {
                 output.push(self.assignments[round_index][i]);
             }
         }
@@ -422,14 +422,13 @@ impl Solution {
         &self,
         round_index: usize,
         model: &Model,
-        used_game: &Game,
     ) -> Vec<(Option<i32>, Option<i32>)> {
         let mut output = Vec::new();
         let assignments = &self.assignments[round_index];
 
         for game in model.rounds[round_index].games.iter() {
             let tuple = game.as_tuple();
-            if !assignments.contains(&tuple) && game.home_player != used_game.home_player && game.out_player != used_game.out_player {
+            if !assignments.contains(&tuple) {
                 output.push(tuple);
             }
         }
@@ -574,6 +573,7 @@ pub fn calculate_lb(
         let mut solution = Solution::new(model.num_rounds as usize, (data.num_teams / 2) as usize);
         let initial = model.get_round(start_round as i32);
         
+
         let mut first_round: i32 = start_round as i32;
         if FIXATE_LB {
             solution.fixate(initial, first_round as usize);
@@ -760,8 +760,11 @@ fn traverse_lb(
     let next_umpire = (current_umpire + 1) % (solution.num_umpires as i32);
     let next_round = if current_umpire == solution.num_umpires as i32 - 1 { current_round + 1 } else { current_round };
 
+    let mut round = model.get_round(current_round);
+    round.sort_by_key(|element| solution.get_extra_distance(element.home_player, current_umpire, current_umpire, data));
+
     // println!("current_round = {}", current_round);
-    for game in model.get_round(current_round) {
+    for game in round {
         // FEASIBILITY CHECK OF THE GAMES:
         // - PREVIOUS UMPIRE ASSIGNMENTS FEASIBILITY
         if ENABLE_ASSIGNMENT_PRUNING {
@@ -877,8 +880,8 @@ fn traverse_lb(
             // println!("{}", solution);
             let my_previous = solution.get_assignment(current_umpire, current_round - 1);
             // dbg!(my_previous);
-            let unsucceeded = solution.get_unsucceeded((current_round - 1) as usize, my_previous);
-            let unused = solution.get_unused(current_round as usize, model, game);
+            let unsucceeded = solution.get_unsucceeded((current_round - 1) as usize);
+            let unused = solution.get_unused(current_round as usize, model);
 
             // dbg!(&unsucceeded);
             // dbg!(&unused);
@@ -895,38 +898,29 @@ fn traverse_lb(
                     }
                 }
 
-                // let previous_home = solution.get_home_player(current_umpire, current_round - 1);
-                // let previous_out = solution.get_out_player(current_umpire, current_round - 1);
+                let previous_home = solution.get_home_player(current_umpire, current_round - 1);
+                let previous_out = solution.get_out_player(current_umpire, current_round - 1);
 
-                // let mut my_index: i32 = -1;
-                // for i in 0..unsucceeded.len() {
-                //     let element = unsucceeded[i];
-                //     if element.0 == previous_home && element.1 == previous_out {
-                //         my_index = i as i32;
-                //         break;
-                //     }
-                // }
+                let mut my_index: i32 = -1;
+                for i in 0..unsucceeded.len() {
+                    let element = unsucceeded[i];
+                    if element.0 == previous_home && element.1 == previous_out {
+                        my_index = i as i32;
+                        break;
+                    }
+                }
 
-                let optimal_assignments = hungarian::minimize(&matrix, size, size);
-                m = optimal_assignments.iter()
-                                    .enumerate()
-                                    .filter_map(|(i, &a)| {
-                                        a.map(|j| matrix[i*size + j])
-                                    })
-                                    .sum();
-                // println!("{}", m);
-                // if my_index >= 0 && my_index < size as i32 {
-                //     // dbg!(my_index);
-                //     // dbg!(&matrix);
-                //     // dbg!(&unsucceeded);
-                //     // dbg!(&unused);
-                //     // dbg!(current_umpire);
-                //     // dbg!(&optimal_assignments);
-                //     let next_umpire_assignment = unused[optimal_assignments[my_index as usize].unwrap()];
-                //     m = solution.get_extra_distance(next_umpire_assignment.0.unwrap(), current_umpire, current_umpire, data);
-                    
-                //     println!("{}", m);
-                // }
+                if my_index < 0 {
+                    let optimal_assignments = hungarian::minimize(&matrix, size, size);
+                    let my_assignment = optimal_assignments[my_index as usize];
+                    m = data.dist[(previous_home.unwrap() - 1) as usize][(my_assignment.unwrap() - 1) as usize];
+                    // m = optimal_assignments.iter()
+                    //                     .enumerate()
+                    //                     .filter_map(|(i, &a)| {
+                    //                         a.map(|j| matrix[i*size + j])
+                    //                     })
+                    //                     .sum();
+                }
             }
         }
         
@@ -1041,8 +1035,12 @@ fn traverse(
 
     let next_umpire = (current_umpire + 1) % (solution.num_umpires as i32);
     let next_round = if current_umpire == solution.num_umpires as i32 - 1 { current_round + 1 } else { current_round };
+    
+    let mut round = model.get_round(current_round);
+    round.sort_by_key(|element| solution.get_extra_distance(element.home_player, current_umpire, current_umpire, data));
 
-    for game in model.get_round(current_round) {
+    // println!("current_round = {}", current_round);
+    for game in round {
         // PRUNE BASED ON ASSIGNMENTS OF PREVIOUS UMPIRE TEAMS IN THE SAME ROUND
         if ENABLE_ASSIGNMENT_PRUNING {
             let mut assignment_feasible = true;
@@ -1181,8 +1179,8 @@ fn traverse(
             // println!("{}", solution);
             let my_previous = solution.get_assignment(current_umpire, current_round - 1);
             // dbg!(my_previous);
-            let unsucceeded = solution.get_unsucceeded((current_round - 1) as usize, my_previous);
-            let unused = solution.get_unused(current_round as usize, model, game);
+            let unsucceeded = solution.get_unsucceeded((current_round - 1) as usize);
+            let unused = solution.get_unused(current_round as usize, model);
 
             // dbg!(&unsucceeded);
             // dbg!(&unused);
@@ -1199,38 +1197,29 @@ fn traverse(
                     }
                 }
 
-                // let previous_home = solution.get_home_player(current_umpire, current_round - 1);
-                // let previous_out = solution.get_out_player(current_umpire, current_round - 1);
+                let previous_home = solution.get_home_player(current_umpire, current_round - 1);
+                let previous_out = solution.get_out_player(current_umpire, current_round - 1);
 
-                // let mut my_index: i32 = -1;
-                // for i in 0..unsucceeded.len() {
-                //     let element = unsucceeded[i];
-                //     if element.0 == previous_home && element.1 == previous_out {
-                //         my_index = i as i32;
-                //         break;
-                //     }
-                // }
+                let mut my_index: i32 = -1;
+                for i in 0..unsucceeded.len() {
+                    let element = unsucceeded[i];
+                    if element.0 == previous_home && element.1 == previous_out {
+                        my_index = i as i32;
+                        break;
+                    }
+                }
 
-                let optimal_assignments = hungarian::minimize(&matrix, size, size);
-                m = optimal_assignments.iter()
-                                    .enumerate()
-                                    .filter_map(|(i, &a)| {
-                                        a.map(|j| matrix[i*size + j])
-                                    })
-                                    .sum();
-                // println!("{}", m);
-                // if my_index >= 0 && my_index < size as i32 {
-                //     // dbg!(my_index);
-                //     // dbg!(&matrix);
-                //     // dbg!(&unsucceeded);
-                //     // dbg!(&unused);
-                //     // dbg!(current_umpire);
-                //     // dbg!(&optimal_assignments);
-                //     let next_umpire_assignment = unused[optimal_assignments[my_index as usize].unwrap()];
-                //     m = solution.get_extra_distance(next_umpire_assignment.0.unwrap(), current_umpire, current_umpire, data);
-                    
-                //     println!("{}", m);
-                // }
+                if my_index < 0 {
+                    let optimal_assignments = hungarian::minimize(&matrix, size, size);
+                    let my_assignment = optimal_assignments[my_index as usize];
+                    m = data.dist[(previous_home.unwrap() - 1) as usize][(my_assignment.unwrap() - 1) as usize];
+                    // m = optimal_assignments.iter()
+                    //                     .enumerate()
+                    //                     .filter_map(|(i, &a)| {
+                    //                         a.map(|j| matrix[i*size + j])
+                    //                     })
+                    //                     .sum();
+                }
             }
         }
         
@@ -1284,6 +1273,9 @@ fn traverse(
 
                 if ENABLE_UPPERBOUND_PRUNING {
                     upperbound = solution.score;
+                    if ENABLE_UPPERBOUND_UPDATE_PRINTS {
+                        println!("{}", upperbound);
+                    }
                 }
 
                 best_solution = solution.clone();
