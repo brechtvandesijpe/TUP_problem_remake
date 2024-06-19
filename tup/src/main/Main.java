@@ -177,6 +177,6 @@ public class Main {
         // - Hungarian/Jonker-Volgenant
         tree.getLowerboundCalculator().clearLBs();
         tree.getLowerboundCalculator().timeAndLogLBMatchAlgorithms();
-        tree.getMatcher().printCacheHitRatio();
+        //tree.getMatcher().printCacheHitRatio();
     }
 }

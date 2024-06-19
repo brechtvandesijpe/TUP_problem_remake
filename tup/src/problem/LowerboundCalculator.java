@@ -78,7 +78,7 @@ public class LowerboundCalculator {
 
 
         // PART 2: Solving subproblems with size [2, R-1]
-        /*
+
         for (int k = 1; k <= NUM_ROUNDS - 1; k++) {
             int r = NUM_ROUNDS - 1 - k;
             Tree tree = new Tree(instance, r, r + k, true);
@@ -96,7 +96,9 @@ public class LowerboundCalculator {
                 }
             }
         }
-        */
+  
+
+        /*
 
         // Create an ExecutorService with a fixed number of threads
         int numThreads = Runtime.getRuntime().availableProcessors();
@@ -131,6 +133,7 @@ public class LowerboundCalculator {
         } catch (InterruptedException e) {
             executor.shutdownNow();
         }
+             */
     }
 
     public void printDebugInfo() {
@@ -222,36 +225,4 @@ public class LowerboundCalculator {
         roundLBs = new int[NUM_ROUNDS][NUM_ROUNDS];
     }
 
-    class LowerboundCalculatorT implements Runnable {
-        private final int startK;
-        private final int endK;
-        private final LowerboundCalculator lowerboundCalculator;
-
-        public LowerboundCalculatorT(int startK, int endK, LowerboundCalculator lowerboundCalculator) {
-            this.startK = startK;
-            this.endK = endK;
-            this.lowerboundCalculator = lowerboundCalculator;
-        }
-    
-        @Override
-        public void run() {
-            for (int k = startK; k <= endK; k++) {
-                int r = NUM_ROUNDS - 1 - k;
-                Tree tree = new Tree(instance, r, r + k, true);
-                tree.startSubTraversal(lowerboundCalculator);
-                int solutionValue = tree.getTotalDistance();
-                for (int r1 = r; r1 >= 0; r1--) {
-                    for (int r2 = r + k; r2 <= NUM_ROUNDS - 1; r2++) {
-                        printDebugInfo();
-                        synchronized (roundLBs) {
-                            roundLBs[r1][r2] = Math.max(roundLBs[r1][r2], roundLBs[r1][r] + solutionValue + roundLBs[r + k][r2]);
-                            if (DEBUG_LOWERBOUND_CALCULATOR) {
-                                System.out.println("Updated {" + r1 + "," + r2 + "} to: " + roundLBs[r1][r2]);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
 }
