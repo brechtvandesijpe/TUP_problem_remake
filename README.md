@@ -3,7 +3,9 @@ _Reinout Annaert & Brecht Van de Sijpe_
 
 
 This repository contains a Java and Rust implementation to solve the Traveling Umpire Problem optimally.
+
 Java version -> Final version Java release
+
 Rust version -> Final version Rust release
 
 __Implemented algorithm:__
