@@ -10,6 +10,9 @@ import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
 import static main.Config.*;
@@ -73,7 +76,9 @@ public class LowerboundCalculator {
             }
         }
 
+
         // PART 2: Solving subproblems with size [2, R-1]
+        /*
         for (int k = 1; k <= NUM_ROUNDS - 1; k++) {
             int r = NUM_ROUNDS - 1 - k;
             Tree tree = new Tree(instance, r, r + k, true);
@@ -90,6 +95,41 @@ public class LowerboundCalculator {
                     }
                 }
             }
+        }
+        */
+
+        // Create an ExecutorService with a fixed number of threads
+        int numThreads = Runtime.getRuntime().availableProcessors();
+        ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+
+        for (int k = 1; k <= NUM_ROUNDS - 1; k++) {
+            final int finalK = k;
+            executor.submit(() -> {
+                int r = NUM_ROUNDS - 1 - finalK;
+                Tree tree = new Tree(instance, r, r + finalK, true);
+                tree.startSubTraversal(this);
+                int solutionValue = tree.getTotalDistance();
+                for (int r1 = r; r1 >= 0; r1--) {
+                    for (int r2 = r + finalK; r2 <= NUM_ROUNDS - 1; r2++) {
+                        synchronized (roundLBs) {
+                            roundLBs[r1][r2] = Math.max(roundLBs[r1][r2], roundLBs[r1][r] + solutionValue + roundLBs[r + finalK][r2]);
+                            if (DEBUG_LOWERBOUND_CALCULATOR) {
+                                System.out.println("Updated {" + r1 + "," + r2 + "} to: " + roundLBs[r1][r2]);
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Shutdown the executor and wait for tasks to complete
+        executor.shutdown();
+        try {
+            if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
         }
     }
 
@@ -180,5 +220,38 @@ public class LowerboundCalculator {
     // for tests
     public void clearLBs() {
         roundLBs = new int[NUM_ROUNDS][NUM_ROUNDS];
+    }
+
+    class LowerboundCalculatorT implements Runnable {
+        private final int startK;
+        private final int endK;
+        private final LowerboundCalculator lowerboundCalculator;
+
+        public LowerboundCalculatorT(int startK, int endK, LowerboundCalculator lowerboundCalculator) {
+            this.startK = startK;
+            this.endK = endK;
+            this.lowerboundCalculator = lowerboundCalculator;
+        }
+    
+        @Override
+        public void run() {
+            for (int k = startK; k <= endK; k++) {
+                int r = NUM_ROUNDS - 1 - k;
+                Tree tree = new Tree(instance, r, r + k, true);
+                tree.startSubTraversal(lowerboundCalculator);
+                int solutionValue = tree.getTotalDistance();
+                for (int r1 = r; r1 >= 0; r1--) {
+                    for (int r2 = r + k; r2 <= NUM_ROUNDS - 1; r2++) {
+                        printDebugInfo();
+                        synchronized (roundLBs) {
+                            roundLBs[r1][r2] = Math.max(roundLBs[r1][r2], roundLBs[r1][r] + solutionValue + roundLBs[r + k][r2]);
+                            if (DEBUG_LOWERBOUND_CALCULATOR) {
+                                System.out.println("Updated {" + r1 + "," + r2 + "} to: " + roundLBs[r1][r2]);
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
