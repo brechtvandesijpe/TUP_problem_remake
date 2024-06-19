@@ -11,7 +11,7 @@ Toffolo, T. Â. M. (2017). *Branch-and-bound with decomposition-based lower boun
 
 
 ### Implemented Components
-**Java version:**
+**Implementation**
 - Branch and Bound Tree search with pruning based on Q1, Q2 & global constraints. Best-first search & fixation to prevent solution rotation.
 
 - Lowerbound calculation:
@@ -20,13 +20,16 @@ Toffolo, T. Â. M. (2017). *Branch-and-bound with decomposition-based lower boun
         - using a matching algorithm
     - Lowerbound strengthening with incremental sub-trees
 
-- Partial matching:
+- Partial matching: (only in the Java version)
     - using a matching algorithm
     - memoization scheme
 
 - Matching algorithms: (check classes for source)
     - Jonker-Volgenant 
     - Hungarian / Munkres
-**Rust version:**
+
+
+Rust-version: final_version_rust
+Java-version: final_version_java
 
 
