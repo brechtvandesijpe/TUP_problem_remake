@@ -96,10 +96,10 @@ public class LowerboundCalculator {
     public void printDebugInfo() {
         if (PRINT_GAP) {
             DecimalFormat df = new DecimalFormat("0.00%");
-            double gapPercentage = (double) (tree.getUpperbound() - roundLBs[0][NUM_ROUNDS - 1]) / tree.getUpperbound();
+            double gapPercentage = (double) (tree.getShortestDistance() - roundLBs[0][NUM_ROUNDS - 1]) / tree.getShortestDistance();
             SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
             String currentTimeStamp = dateFormat.format(new Date());
-            System.out.println(lightGrey + "[" + currentTimeStamp + "]" + reset + " GAP: " + df.format(gapPercentage) + ", LB: " + roundLBs[0][NUM_ROUNDS - 1] + ", UB: " + tree.getUpperbound() + yellow + " [LB ↑]" + Config.reset);
+            System.out.println(lightGrey + "[" + currentTimeStamp + "]" + reset + " GAP: " + df.format(gapPercentage) + ", LB: " + roundLBs[0][NUM_ROUNDS - 1] + ", UB: " + tree.getShortestDistance() + yellow + " [LB ↑]" + Config.reset);
         }
     }
 

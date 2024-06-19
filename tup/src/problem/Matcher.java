@@ -138,10 +138,9 @@ public class Matcher {
         return isFeasible(g1, g2) ? interStadiumDist : INFEASIBLE;
     }
 
-    public double printCacheHitRatio() {
+    public void printCacheHitRatio() {
         double hitRatio = (double) cacheHits / (cacheHits + cacheMisses);
         System.out.println(Config.red + "Hit Ratio of Cache: " + hitRatio + ". " + reset);
-        return hitRatio;
     }
 
     public double getHitRatio() {

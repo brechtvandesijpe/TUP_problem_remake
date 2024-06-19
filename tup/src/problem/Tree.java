@@ -243,7 +243,7 @@ public class Tree {
                     IntStream.rangeClosed(branchStart, NUM_UMPIRES * (1 + endRoundIndex) - 1).forEach(g -> solution[getGame(g).getRound()][gameUmpireLookup[g]] = g);
                     if (evaluate(currentRoundIndex) < upperbound) {
                         // Better solution found. Set the UB.
-                        setUpperbound();
+                        setShortestDistance();
                         if (!isSub) {
                             // Only print gap if it's not a sub-tree.
                             printDebugInfo();
@@ -350,7 +350,6 @@ public class Tree {
         IntStream.range(0, NUM_ROUNDS).forEach(round -> IntStream.range(0, NUM_UMPIRES).forEach(umpireId -> stadiumCount[umpireId][getGame(solution[round][umpireId]).getHomePlayerId()] += 1));
     }
 
-
     /**
      * Evaluates the stadium counts against global constr.
      */
@@ -396,8 +395,6 @@ public class Tree {
         return 0;
     }
 
-    // ************** CHECKS
-
     /**
      * Gets the next umpire ID if there is a next one.
      */
@@ -423,10 +420,6 @@ public class Tree {
         return isLastUmpire(umpireId) && currentRoundIndex == endRoundIndex;
     }
 
-    /**
-     * Checks if the given umpire ID is the last umpire to be checked.
-     */
-
     public boolean isLastUmpire(int umpireId) {
         return umpireId == NUM_UMPIRES - 1;
     }
@@ -439,23 +432,12 @@ public class Tree {
         return lowerbound + partialDistance < upperbound;
     }
 
-    // ******** SETTERS
-
-    /**
-     * Sets the upper bound solution. (best dist).
-     */
-    public void setUpperbound() {
+    public void setShortestDistance() {
         UBSolution = solution;
-        upperbound = evaluate(-1);  // todo
+        upperbound = evaluate(-1);
     }
 
-    // ******** GETTERS
-
-    /**
-     * Gets shortest dist.
-     */
-
-    public int getUpperbound() {
+    public int getShortestDistance() {
         return upperbound;
     }
 

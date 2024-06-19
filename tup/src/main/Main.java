@@ -32,7 +32,6 @@ public class Main {
         }
     }
 
-
     private void writeHitRatioToCSV(String instanceFileName, double hitRatio, int accessCount) {
         String filePath = "hitratio.csv";
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath, true))) {
@@ -41,8 +40,6 @@ public class Main {
             System.err.println("Error writing to CSV: " + e.getMessage());
         }
     }
-
-
 
     public static void main(String[] args) throws IOException {
         Main main = new Main();
@@ -147,7 +144,7 @@ public class Main {
         tree.startGlobalTraversal();
         long endExecution = threadMXBean.getCurrentThreadCpuTime();
 
-        int upperbound = tree.getUpperbound();
+        int upperbound = tree.getShortestDistance();
         String solutionMessage = (upperbound == Integer.MAX_VALUE) ? "Infeasible" : String.valueOf(upperbound);
 
         if (upperbound == expectedValue) {
@@ -175,7 +172,7 @@ public class Main {
             }
         }
 
-        // Timing for camparios LB Matching Strategies:
+        // Timing for camparisons LB Matching Strategies:
         // - 2-deep Tree search
         // - Hungarian/Jonker-Volgenant
         tree.getLowerboundCalculator().clearLBs();
